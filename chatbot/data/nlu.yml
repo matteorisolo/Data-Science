@@ -1,0 +1,296 @@
+version: "3.1"
+
+nlu:
+- intent: greet
+  examples: |
+    - ciao
+    - buongiorno
+    - hey
+    - salve
+
+- intent: help
+  examples: |
+    - cosa sai fare
+    - aiutami
+    - come funzioni
+    - cosa posso chiederti
+
+- intent: search_by_category
+  examples: |
+    - voglio un [dolce](category)
+    - mostrami dei [primi piatti](category)
+    - cerco un [secondo](category)
+    - dammi una ricetta di [antipasto](category)
+
+- intent: select_from_last_recipes
+  examples: |
+    - fammi vedere [tiramisu](recipe_name)
+    - voglio vedere [lasagna](recipe_name)
+    - mostrami [carbonara](recipe_name)
+    - fammi rivedere [zuppa di verdure](recipe_name)
+    - mostrami di nuovo [risotto ai funghi](recipe_name)
+    - voglio leggere [cheescake arancia e cioccolato](recipe_name)
+    - fammi vedere [pollo alla cacciatora](recipe_name)
+    - mostrami [pumpkin pie](recipe_name)
+    - voglio guardare [torta moderna all'anguria](recipe_name)
+    - fammi vedere di nuovo [biscotti rustici al limone](recipe_name)
+    - fammi vedere [pesche caramellate](recipe_name)
+    - mostrami [torta di mele](recipe_name)
+    - voglio cucinare [pollo al curry](recipe_name)
+    - fammi vedere la ricetta [riso al forno](recipe_name)
+    - mostrami [pasta alla norma](recipe_name)
+    - vorrei [zuppa di ceci](recipe_name)
+    - scegli [risotto ai funghi](recipe_name)
+
+- intent: select_by_index
+  examples: |
+    - fammi vedere la prima
+    - mostrami la seconda
+    - voglio la terza
+    - fammi vedere l'ultima
+    - mostrami la numero due
+    - la prima
+    - la seconda
+    - la terza
+
+- intent: show_shopping_list
+  examples: |
+    - voglio la lista della spesa della [Carbonara](recipe_name)
+    - mostrami la lista della spesa del [Tiramisu](recipe_name)
+    - voglio la lista della spesa di [Lasagna alla bolognese](recipe_name)
+    - fammi vedere la lista della spesa della [Zuppa di verdure invernale](recipe_name)
+    - mostrami la lista della spesa del [Risotto ai funghi porcini](recipe_name)
+    - voglio fare la spesa per [Cheescake arancia e cioccolato](recipe_name)
+    - fammi vedere la lista della spesa del [Pollo alla cacciatora con contorno di verdure](recipe_name)
+    - voglio la lista della spesa per [Pumpkin Pie speziata](recipe_name)
+    - mostrami la lista della spesa della [Torta moderna all'anguria e cioccolato bianco](recipe_name)
+    - fammi vedere la lista della spesa di [Biscotti rustici al limone e mandorle](recipe_name)
+    - voglio fare la spesa per [Pesche caramellate con vaniglia](recipe_name)
+    - mostrami la lista della spesa della [Torta di mele con cannella e noci](recipe_name)
+    - voglio la lista della spesa per [Pollo al curry con riso basmati](recipe_name)
+    - fammi vedere la lista della spesa di [Riso al forno con verdure e formaggio](recipe_name)
+    - voglio la lista della spesa della [Pasta alla norma con melanzane e ricotta salata](recipe_name)
+    - mostrami la lista della spesa della [Zuppa di ceci speziata](recipe_name)
+
+- intent: search_by_name
+  examples: |
+    - fammi la [carbonara](recipe_name)
+    - voglio la [torta di mele](recipe_name)
+    - mostrami una ricetta per le [pesche caramellate](recipe_name)
+    - cerco la ricetta della [lasagna](recipe_name)
+    - vorrei cucinare il [pollo al curry](recipe_name)
+    - fammi vedere la ricetta del [risotto ai funghi](recipe_name)
+    - voglio preparare la [cheesecake al cioccolato](recipe_name)
+    - mostrami come si fa la [torta moderna all'anguria](recipe_name)
+    - fammi la ricetta dei [biscotti rustici al limone](recipe_name)
+    - voglio cucinare il [pollo alla cacciatora](recipe_name)
+    - mostrami una ricetta di [zuppa di ceci](recipe_name)
+    - fammi vedere il [riso al forno](recipe_name)
+    - cerco una ricetta per la [pasta alla norma](recipe_name)
+    - voglio fare il [risotto ai funghi porcini](recipe_name)
+    - mostrami la ricetta della [torta soffice allo yogurt](recipe_name)
+    - fammi vedere come si prepara la [torta al cioccolato fondente](recipe_name)
+    - voglio cucinare le [pesche caramellate al forno](recipe_name)
+    - mostrami la ricetta dei [biscotti integrali al miele](recipe_name)
+    - fammi una ricetta per il [pollo al limone](recipe_name)
+    - cerco la [zuppa di verdure invernali](recipe_name)
+    - vorrei preparare la [torta di ricotta e pere](recipe_name)
+    - mostrami come fare la [cheesecake arancia e cioccolato](recipe_name)
+    - voglio cucinare il [filetto di maiale al forno](recipe_name)
+    - fammi la ricetta delle [melanzane alla parmigiana](recipe_name)
+    - cerco una ricetta per il [risotto allo zafferano](recipe_name)
+    - mostrami la ricetta dei [cannelloni ricotta e spinaci](recipe_name)
+    - voglio preparare il [pollo arrosto con patate](recipe_name)
+    - fammi vedere la ricetta della [torta salata zucchine e ricotta](recipe_name)
+    - cerco come si prepara la [vellutata di zucca e patate](recipe_name)
+
+- intent: search_by_ingredients
+  examples: |
+    - ho [zucchine](ingredient) e [gamberetti](ingredient)
+    - cosa posso fare con [uova](ingredient) e [pancetta](ingredient)
+    - ho solo [pasta](ingredient) e [pomodori](ingredient)
+    - cosa cucino con [patate](ingredient), [cipolle](ingredient) e [salsiccia](ingredient)
+    - ho [farina](ingredient), [uova](ingredient) e [zucchero](ingredient)
+    - cosa posso preparare con [riso](ingredient)
+    - idee con [melanzane](ingredient) e [mozzarella](ingredient)
+    - ho in frigo [pollo](ingredient) e [limone](ingredient)
+    - ricette con [tonno](ingredient) e [pasta](ingredient)
+    - cosa posso fare usando [ricotta](ingredient)
+
+- intent: surprise_me
+  examples: |
+    - sorprendimi
+    - scegli tu
+    - fai tu
+    - proponimi qualcosa
+    - non so cosa cucinare
+    - decidi tu per me
+    - dammi una ricetta a caso
+    - fammi una ricetta casuale
+    - qualcosa di random
+    - quello che vuoi tu
+
+- intent: filter_by_difficulty
+  examples: |
+    - Voglio qualcosa di [facile](difficulty)
+    - Qualcosa di [facile](difficulty) da cucinare
+    - Un piatto [facile](difficulty)
+    - Una ricetta [facile](difficulty) per principianti
+    - Un dolce [facile](difficulty)
+    - Vorrei un primo [facile](difficulty)
+    - Qualcosa di [semplice](difficulty) da preparare
+    - Cerco un piatto [semplice](difficulty)
+    - Voglio una ricetta [rapida](difficulty)
+    - Un antipasto [facile](difficulty)
+    - Voglio qualcosa di [media](difficulty) difficoltà
+    - Una ricetta di difficoltà [media](difficulty)
+    - Un piatto [intermedio](difficulty)
+    - Cerco un dessert [media](difficulty)
+    - Vorrei un primo [intermedio](difficulty)
+    - Una preparazione di livello [medio](difficulty)
+    - Un piatto di complessità [media](difficulty)
+    - Qualcosa di [medio](difficulty) da cucinare
+    - Una ricetta [media](difficulty) difficoltà
+    - Un secondo di difficoltà [intermedia](difficulty)
+    - Voglio qualcosa di [difficile](difficulty)
+    - Un piatto [difficile](difficulty)
+    - Una ricetta [complicata](difficulty)
+    - Vorrei un dessert [difficile](difficulty)
+    - Un primo di livello [avanzato](difficulty)
+    - Cerco qualcosa di [hard](difficulty)
+    - Una preparazione [difficile](difficulty)
+    - Qualcosa di [molto difficile](difficulty)
+    - Una ricetta [impegnativa](difficulty)
+    - Un piatto [difficile](difficulty) da fare
+
+- intent: suggest_similar_recipes
+  examples: |
+    - hai qualcosa di simile?
+    - suggeriscimi ricette simili
+    - qualcosa di simile
+    - piatti simili
+    - ricette simili
+    - consigliami qualcosa di simile
+    - qualcosa come questa
+    - alternative simili
+
+- intent: guided_search
+  examples: |
+    - aiutami a cercare una ricetta
+    - voglio una ricerca guidata
+    - non so cosa cucinare
+    - fammi qualche domanda per scegliere
+    - voglio cercare una ricetta con dei filtri
+    - guidami nella ricerca
+
+- intent: inform
+  examples: |
+    # --- Category (Basato sui tuoi dati reali) ---
+    - [primo](category)
+    - un [secondo](category)
+    - vorrei un [dolce](category)
+    - cerco un [antipasto](category)
+    - mostrami dei [contorni](category)
+    - voglio cucinare dei [lievitati](category)
+    - [piatti unici](category)
+    - [torte salate](category)
+    - [salse e sughi](category)
+    - [insalate](category)
+    - [marmellate e conserve](category)
+    - [bevande](category)
+    - una ricetta per un [primo piatto](category)
+    - un [dolce](category) veloce
+    
+    # --- Difficulty ---
+    - [facile](difficulty)
+    - [media](difficulty)
+    - [difficile](difficulty)
+    - qualcosa di [facile](difficulty)
+    - difficoltà [media](difficulty)
+    - ricetta [semplice](difficulty)
+    - livello [difficile](difficulty)
+    
+    # --- Ingredients (I top 50 ingredienti del tuo CSV) ---
+    - [mele](ingredient)
+    - [pere](ingredient)
+    - [pollo](ingredient)
+    - [zucchine](ingredient) e [gamberetti](ingredient)
+    - ho [sale](ingredient), [pepe](ingredient) e [olio](ingredient)
+    - [uova](ingredient)
+    - [farina](ingredient) e [burro](ingredient)
+    - [zucchero](ingredient)
+    - [aglio](ingredient) e [cipolla](ingredient)
+    - [latte](ingredient)
+    - [panna fresca](ingredient)
+    - [pomodori](ingredient)
+    - [basilico](ingredient)
+    - [parmigiano](ingredient)
+    - [patate](ingredient)
+    - [limone](ingredient)
+    - [cioccolato](ingredient)
+    - [vaniglia](ingredient)
+    - [lievito](ingredient)
+    - [rosmarino](ingredient)
+    - [timo](ingredient)
+    - [mascarpone](ingredient)
+    - [ricotta](ingredient)
+    - [riso](ingredient)
+    - [pasta](ingredient)
+    - [tonno](ingredient)
+    - [salmone](ingredient)
+    - [melanzane](ingredient)
+    - [peperoni](ingredient)
+    - [spinaci](ingredient)
+    - [funghi](ingredient)
+    - [zucca](ingredient)
+    - [carote](ingredient)
+    - [sedano](ingredient)
+    - [gamberi](ingredient)
+    - [vongole](ingredient)
+    - [cozze](ingredient)
+    - [calamari](ingredient)
+    - [manzo](ingredient)
+    - [maiale](ingredient)
+    - [salsiccia](ingredient)
+    - [pancetta](ingredient)
+    - [prosciutto](ingredient)
+    - [mozzarella](ingredient)
+    - [yogurt](ingredient)
+    - [miele](ingredient)
+    - [mandorle](ingredient)
+    - [nocciole](ingredient)
+    - [noci](ingredient)
+    - [pistacchi](ingredient)
+    
+    # --- Num People ---
+    - [4](number)
+    - siamo in [2](number)
+    - per [3](number) persone
+    - [1](number)
+    - cucino per [6](number)
+    - [8](number) ospiti
+    - [10](number)
+    - [5](number) porzioni
+
+- lookup: recipe_name
+  examples: |
+    # Rasa caricherà anche il file data/nlu/lookup_recipes.yml
+
+- synonym: dolci
+  examples: |
+    - dolce
+    - dessert
+
+- synonym: facile
+  examples: |
+    - semplice
+    - easy
+    - quick
+- synonym: media
+  examples: |
+    - intermedia
+    - media
+- synonym: difficile
+  examples: |
+    - hard
+    - complicata

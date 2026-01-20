@@ -1,0 +1,138 @@
+version: "3.1"
+
+intents:
+  - greet
+  - help
+  - search_by_category
+  - select_from_last_recipes
+  - select_by_index
+  - show_shopping_list
+  - search_by_name
+  - search_by_ingredients
+  - surprise_me
+  - filter_by_difficulty
+  - suggest_similar_recipes
+  - guided_search
+
+entities:
+  - category
+  - recipe_name
+  - ingredient
+  - difficulty
+  - number  # Aggiunto perchè usato in num_people
+
+slots:
+  category:
+    type: text
+    influence_conversation: true
+    mappings:
+      # 1. Priorità all'entità se l'intent è chiaro (Laptop Style)
+      - type: from_entity
+        entity: category
+        intent: [inform, search_by_category, guided_search]
+      # 2. Fallback: se nel form non capisce l'entità, prende il testo
+      - type: from_text
+        conditions:
+        - active_loop: guided_search_form
+          requested_slot: category
+
+  difficulty:
+    type: text
+    influence_conversation: true
+    mappings:
+      - type: from_entity
+        entity: difficulty
+        intent: [inform, filter_by_difficulty, guided_search]
+      - type: from_text
+        conditions:
+        - active_loop: guided_search_form
+          requested_slot: difficulty
+
+  ingredients:
+    type: list
+    influence_conversation: true
+    mappings:
+      # Qui from_entity riempie la lista automaticamente
+      - type: from_entity
+        entity: ingredient
+        intent: [inform, search_by_ingredients, guided_search]
+      # Fallback testuale (la validate action poi lo trasformerà in lista)
+      - type: from_text
+        conditions:
+        - active_loop: guided_search_form
+          requested_slot: ingredients
+
+  num_people:
+    type: float
+    influence_conversation: true
+    mappings:
+      - type: from_entity
+        entity: number
+        intent: [inform, guided_search]
+      - type: from_text
+        conditions:
+        - active_loop: guided_search_form
+          requested_slot: num_people
+
+  last_recipes:
+    type: list
+    influence_conversation: false
+    mappings:
+      - type: custom
+
+  recipe_name:
+    type: text
+    influence_conversation: true
+    mappings:
+      - type: from_entity
+        entity: recipe_name
+
+  recipe_index:
+    type: text
+    influence_conversation: false
+    mappings:
+      - type: custom
+
+forms:
+  guided_search_form:
+    required_slots:
+      - category
+      - difficulty
+      - ingredients
+      - num_people
+
+responses:
+  utter_greet:
+    - text: "Ciao! Sono RecipeBot 🍝"
+  utter_help:
+    - text: |
+        Posso aiutarti a:
+        - cercare ricette per categoria
+        - filtrare per difficoltà
+        - suggerirti cosa cucinare
+  utter_searching:
+    - text: "Sto cercando delle ricette per te...🍝"
+  utter_ask_category:
+    - text: "Che tipo di piatto vuoi? (primo, secondo, dolce, ecc.)"
+  utter_ask_difficulty:
+    - text: "Che livello di difficoltà preferisci? (facile, media, difficile)"
+  utter_ask_ingredients:
+    - text: "Hai qualche ingrediente da usare? (puoi dirne più di uno oppure scrivere 'no')"
+  utter_ask_num_people:
+    - text: "Per quante persone?"
+  utter_no_results:
+    - text: "Non ho trovato ricette con questi criteri 😕"
+
+actions:
+  - action_search_by_category
+  - action_select_recipe
+  - action_select_by_index
+  - action_show_shopping_list
+  - action_search_by_name
+  - action_search_by_ingredients
+  - action_surprise_me
+  - action_filter_by_difficulty
+  - action_suggest_similar_recipes
+  - action_start_guided_search_form
+  - action_submit_guided_search
+  - validate_guided_search_form

@@ -1,0 +1,34 @@
+version: "3.1"
+
+rules:
+  - rule: Random Recipe
+    steps:
+      - intent: surprise_me
+      - action: action_surprise_me
+  - rule: Filter by difficulty
+    steps:
+    - intent: filter_by_difficulty
+    - action: action_filter_by_difficulty
+  - rule: Suggest similar recipes
+    steps:
+      - intent: suggest_similar_recipes
+      - action: action_suggest_similar_recipes
+  - rule: Start guided search form
+    steps:
+      - intent: guided_search
+      - action: action_start_guided_search_form
+      - active_loop: guided_search_form
+  - rule: Continue guided search form
+    condition:
+      - active_loop: guided_search_form
+    steps:
+      - intent: null
+      - action: guided_search_form
+      - active_loop: guided_search_form
+  - rule: Submit guided search form
+    condition:
+      - active_loop: guided_search_form
+    steps:
+      - action: guided_search_form
+      - active_loop: null
+      - action: action_submit_guided_search

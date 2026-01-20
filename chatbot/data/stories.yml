@@ -1,0 +1,45 @@
+version: "3.1"
+
+stories:
+- story: greet user
+  steps:
+  - intent: greet
+  - action: utter_greet
+
+- story: help user
+  steps:
+  - intent: help
+  - action: utter_help
+
+- story: search category
+  steps:
+  - intent: search_by_category
+  - action: utter_searching
+  - action: action_search_by_category
+
+- story: select recipe after search
+  steps:
+  - intent: select_from_last_recipes
+  - action: action_select_recipe
+
+- story: select recipe after search by position
+  steps:
+    - intent: select_by_index
+    - action: action_select_by_index
+    - action: action_select_recipe
+
+- story: shopping list
+  steps:
+    - intent: show_shopping_list
+    - action: action_show_shopping_list
+
+- story: search recipe by name
+  steps:
+    - intent: search_by_name
+    - action: action_search_by_name
+    - action: action_select_recipe
+
+- story: search by ingredients
+  steps:
+    - intent: search_by_ingredients
+    - action: action_search_by_ingredients
