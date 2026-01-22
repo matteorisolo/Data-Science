@@ -28,10 +28,10 @@ stories:
     - action: action_select_by_index
     - action: action_select_recipe
 
-- story: shopping list
+- story: ask recipe ingredients
   steps:
-    - intent: show_shopping_list
-    - action: action_show_shopping_list
+    - intent: ask_recipe_ingredients
+    - action: action_ask_recipe_ingredients
 
 - story: search recipe by name
   steps:

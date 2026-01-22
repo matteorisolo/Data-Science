@@ -6,13 +6,16 @@ intents:
   - search_by_category
   - select_from_last_recipes
   - select_by_index
-  - show_shopping_list
+  - ask_recipe_ingredients
   - search_by_name
   - search_by_ingredients
   - surprise_me
   - filter_by_difficulty
   - suggest_similar_recipes
   - guided_search
+  - add_to_shopping_list    # "Aggiungi questa ricetta alla spesa"
+  - clear_shopping_list     # "Svuota la lista"
+  - show_shopping_list      # (Lo hai già, ma lo aggiorneremo)
 
 entities:
   - category
@@ -93,6 +96,12 @@ slots:
     mappings:
       - type: custom
 
+  shopping_list:
+    type: any      # Conterrà un Dizionario Python: {"uova": "4", "farina": "500g"}
+    influence_conversation: false
+    mappings:
+      - type: custom
+
 forms:
   guided_search_form:
     required_slots:
@@ -122,12 +131,19 @@ responses:
     - text: "Per quante persone?"
   utter_no_results:
     - text: "Non ho trovato ricette con questi criteri 😕"
+  utter_shopping_list_cleared:
+    - text: "Ho svuotato la tua lista della spesa! 🗑️"
+  utter_added_to_list:
+    - text: "Ho aggiunto gli ingredienti di {recipe_name} alla tua lista! 🛒"
+  utter_default:
+    - text: "Scusa, non ho capito cosa intendi 😕. Posso cercare ricette, mostrarti il carrello o aiutarti a scegliere."
+    - text: "Mmm, questo è fuori dalla mia portata culinaria 🍳. Prova a chiedermi una ricetta!"
 
 actions:
   - action_search_by_category
   - action_select_recipe
   - action_select_by_index
-  - action_show_shopping_list
+  - action_ask_recipe_ingredients
   - action_search_by_name
   - action_search_by_ingredients
   - action_surprise_me
@@ -136,3 +152,6 @@ actions:
   - action_start_guided_search_form
   - action_submit_guided_search
   - validate_guided_search_form
+  - action_show_shopping_list
+  - action_add_to_shopping_list
+  - action_clear_shopping_list

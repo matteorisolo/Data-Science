@@ -32,3 +32,19 @@ rules:
       - action: guided_search_form
       - active_loop: null
       - action: action_submit_guided_search
+  - rule: Show saved shopping list
+    steps:
+      - intent: show_shopping_list
+      - action: action_show_shopping_list
+  - rule: Add current recipe to shopping list
+    steps:
+      - intent: add_to_shopping_list
+      - action: action_add_to_shopping_list
+  - rule: Clear shopping list
+    steps:
+      - intent: clear_shopping_list
+      - action: action_clear_shopping_list
+  - rule: Risposta di default quando non capisco (Fallback)
+    steps:
+      - intent: nlu_fallback
+      - action: utter_default

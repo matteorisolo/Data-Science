@@ -33,11 +33,18 @@ pipeline:
 
 - name: EntitySynonymMapper
 
+- name: FallbackClassifier
+  threshold: 0.4              # Se la sicurezza è sotto il 40%, attiva il fallback
+  ambiguity_threshold: 0.1    # Se due intent sono troppo simili (es. 0.50 e 0.55), attiva il fallback
+
 # Configuration for Rasa Core.
 # https://rasa.com/docs/rasa/core/policies/
 policies:
 - name: MemoizationPolicy
 - name: RulePolicy
+  core_fallback_threshold: 0.4
+  core_fallback_action_name: "action_default_fallback"
+  enable_fallback_prediction: True
 - name: TEDPolicy
   max_history: 10
   epochs: 200

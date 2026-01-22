@@ -172,3 +172,63 @@ def search_recipes_guided(
         return []
 
     return df["Nome"].tolist()[:limit]
+
+import re
+
+def parse_quantity(quantity_str):
+    """
+    Trasforma '200g' in (200.0, 'g').
+    Trasforma '2 cucchiai' in (2.0, 'cucchiai').
+    Trasforma 'q.b.' in (None, 'q.b.').
+    """
+    quantity_str = str(quantity_str).lower().strip()
+    
+    # Regex per cercare numeri (anche decimali) all'inizio della stringa
+    match = re.match(r"([\d\.,]+)\s*(.*)", quantity_str)
+    
+    if match:
+        number_str = match.group(1).replace(",", ".") # Gestione virgola italiana
+        unit = match.group(2).strip()
+        try:
+            return float(number_str), unit
+        except ValueError:
+            return None, quantity_str
+            
+    return None, quantity_str
+
+def merge_shopping_lists(current_list, new_ingredients):
+    """
+    current_list: Dizionario {'farina': {'qty': 500, 'unit': 'g'}, ...}
+    new_ingredients: Lista di dict dal CSV [{'nome': 'farina', 'quantita': '200g'}]
+    """
+    if not current_list:
+        current_list = {}
+
+    for item in new_ingredients:
+        name = item['nome'].lower().strip()
+        raw_qty = item['quantita']
+        
+        amount, unit = parse_quantity(raw_qty)
+        
+        # Se l'ingrediente è già in lista
+        if name in current_list:
+            existing = current_list[name]
+            
+            # CASO 1: Le unità sono uguali e numeriche (es. g con g) -> SOMMA
+            if amount is not None and existing['amount'] is not None and existing['unit'] == unit:
+                existing['amount'] += amount
+            
+            # CASO 2: Unità diverse o non numeriche -> ACCODA IL TESTO (es. "200g + q.b.")
+            else:
+                # Creiamo una visualizzazione composta se non possiamo sommare matematicamente
+                existing['original_text'] = f"{existing['original_text']} + {raw_qty}"
+        
+        # Se l'ingrediente è nuovo
+        else:
+            current_list[name] = {
+                'amount': amount,
+                'unit': unit,
+                'original_text': raw_qty if amount is None else f"{amount} {unit}" # Fallback visivo
+            }
+            
+    return current_list

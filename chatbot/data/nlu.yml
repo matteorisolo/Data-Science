@@ -53,18 +53,18 @@ nlu:
     - la seconda
     - la terza
 
-- intent: show_shopping_list
+- intent: ask_recipe_ingredients
   examples: |
-    - voglio la lista della spesa della [Carbonara](recipe_name)
-    - mostrami la lista della spesa del [Tiramisu](recipe_name)
-    - voglio la lista della spesa di [Lasagna alla bolognese](recipe_name)
-    - fammi vedere la lista della spesa della [Zuppa di verdure invernale](recipe_name)
-    - mostrami la lista della spesa del [Risotto ai funghi porcini](recipe_name)
-    - voglio fare la spesa per [Cheescake arancia e cioccolato](recipe_name)
-    - fammi vedere la lista della spesa del [Pollo alla cacciatora con contorno di verdure](recipe_name)
-    - voglio la lista della spesa per [Pumpkin Pie speziata](recipe_name)
-    - mostrami la lista della spesa della [Torta moderna all'anguria e cioccolato bianco](recipe_name)
-    - fammi vedere la lista della spesa di [Biscotti rustici al limone e mandorle](recipe_name)
+    - voglio la lista degli ingredienti della [Carbonara](recipe_name)
+    - mostrami la lista degli ingredienti del [Tiramisu](recipe_name)
+    - voglio la lista degli ingredienti di [Lasagna alla bolognese](recipe_name)
+    - fammi vedere la lista degli ingredienti della [Zuppa di verdure invernale](recipe_name)
+    - mostrami la lista degli ingredienti del [Risotto ai funghi porcini](recipe_name)
+    - voglio vedere gli ingredienti [Cheescake arancia e cioccolato](recipe_name)
+    - fammi vedere la lista degli ingredienti del [Pollo alla cacciatora con contorno di verdure](recipe_name)
+    - voglio la lista degli ingredienti per [Pumpkin Pie speziata](recipe_name)
+    - mostrami la lista degli ingredienti della [Torta moderna all'anguria e cioccolato bianco](recipe_name)
+    - fammi vedere la lista degli ingredienti di [Biscotti rustici al limone e mandorle](recipe_name)
     - voglio fare la spesa per [Pesche caramellate con vaniglia](recipe_name)
     - mostrami la lista della spesa della [Torta di mele con cannella e noci](recipe_name)
     - voglio la lista della spesa per [Pollo al curry con riso basmati](recipe_name)
@@ -123,7 +123,6 @@ nlu:
     - scegli tu
     - fai tu
     - proponimi qualcosa
-    - non so cosa cucinare
     - decidi tu per me
     - dammi una ricetta a caso
     - fammi una ricetta casuale
@@ -271,6 +270,29 @@ nlu:
     - [8](number) ospiti
     - [10](number)
     - [5](number) porzioni
+
+- intent: add_to_shopping_list
+  examples: |
+    - aggiungi alla lista
+    - aggiungi ingredienti alla spesa
+    - metti nella lista della spesa
+    - compra questi ingredienti
+    - aggiungi questa ricetta alla spesa
+
+- intent: show_shopping_list
+  examples: |
+    - cosa devo comprare?
+    - fammi vedere la lista
+    - visualizza spesa
+    - leggi la lista della spesa
+    - vediamo la lista della spesa
+
+- intent: clear_shopping_list
+  examples: |
+    - svuota la lista
+    - cancella la spesa
+    - resetta la lista della spesa
+    - ho comprato tutto, cancella
 
 - lookup: recipe_name
   examples: |

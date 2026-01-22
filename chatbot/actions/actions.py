@@ -9,6 +9,7 @@ from actions.recipe_utils import get_recipes_by_ingredients
 from actions.recipe_utils import get_recipes_by_difficulty
 from actions.recipe_utils import get_similar_recipes_by_ingredients
 from actions.recipe_utils import search_recipes_guided
+from actions.recipe_utils import merge_shopping_lists
 
 
 class ActionSearchByCategory(Action):
@@ -125,10 +126,10 @@ class ActionSelectByIndex(Action):
             SlotSet("recipe_name", recipe_name)
         ]
 
-class ActionShowShoppingList(Action):
+class ActionAskRecipeIngredients(Action):
 
     def name(self) -> str:
-        return "action_show_shopping_list"
+        return "action_ask_recipe_ingredients"
 
     def run(self, dispatcher: CollectingDispatcher,
             tracker: Tracker,
@@ -429,3 +430,64 @@ class ActionSubmitGuidedSearch(Action):
         dispatcher.utter_message(response)
 
         return [SlotSet("last_recipes", recipes)]
+    
+class ActionAddToShoppingList(Action):
+    def name(self) -> str:
+        return "action_add_to_shopping_list"
+
+    def run(self, dispatcher, tracker, domain):
+        # 1. Recupera la ricetta corrente
+        recipe_name = tracker.get_slot("recipe_name")
+        if not recipe_name:
+            dispatcher.utter_message("Non hai selezionato nessuna ricetta da aggiungere.")
+            return []
+
+        # 2. Recupera i dati dal CSV
+        recipe_data = get_recipe_by_name(recipes_df, recipe_name) # La tua funzione esistente
+        if not recipe_data:
+             return []
+             
+        # 3. Recupera la lista spesa attuale (o creane una vuota)
+        current_list = tracker.get_slot("shopping_list") or {}
+        
+        # 4. UNISCI (La magia della somma)
+        updated_list = merge_shopping_lists(current_list, recipe_data['ingredienti_parsed'])
+        
+        dispatcher.utter_message(f"Ho aggiunto gli ingredienti di **{recipe_name}** alla lista! 🛒")
+        
+        return [SlotSet("shopping_list", updated_list)]
+
+class ActionShowShoppingList(Action):
+    def name(self) -> str:
+        return "action_show_shopping_list"
+
+    def run(self, dispatcher, tracker, domain):
+        shopping_list = tracker.get_slot("shopping_list")
+        
+        if not shopping_list:
+            dispatcher.utter_message("La tua lista della spesa è vuota! 🛒")
+            return []
+            
+        response = "🛒 **La tua Lista della Spesa:**\n"
+        for name, data in shopping_list.items():
+            # Se abbiamo sommato matematicamente, ricostruiamo la stringa pulita
+            if data['amount'] is not None and "+" not in str(data['original_text']):
+                # Formattazione carina: 500.0g -> 500g
+                qty_clean = f"{data['amount']:.0f}" if data['amount'].is_integer() else f"{data['amount']}"
+                line = f"- {name.title()}: {qty_clean}{data['unit']}"
+            else:
+                # Fallback: stampa il testo accumulato (es. "Sale: q.b. + 1 pizzico")
+                line = f"- {name.title()}: {data['original_text']}"
+                
+            response += line + "\n"
+            
+        dispatcher.utter_message(response)
+        return []
+
+class ActionClearShoppingList(Action):
+    def name(self) -> str:
+        return "action_clear_shopping_list"
+
+    def run(self, dispatcher, tracker, domain):
+        dispatcher.utter_message("Lista svuotata! 🗑️")
+        return [SlotSet("shopping_list", None)]
