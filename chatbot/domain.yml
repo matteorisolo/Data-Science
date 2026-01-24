@@ -112,13 +112,48 @@ forms:
 
 responses:
   utter_greet:
-    - text: "Ciao! Sono RecipeBot 🍝"
+    - custom:
+        text: "Ciao! Sono <b>ProntoChef</b> 🍝. Cosa bolle in pentola oggi?"
+        parse_mode: "HTML"
+    - custom:
+        text: "Benvenuto! 👨‍🍳 <b>Sono ProntoChef</b>, il tuo assistente ai fornelli. Hai già fame?"
+        parse_mode: "HTML"
+    - custom:
+        text: "Ehi! 👋 Sono <b>ProntoChef</b>. Dimmi cosa hai nel frigo e ti dirò cosa mangiare!"
+        parse_mode: "HTML"
+    - custom:
+        text: "Ciao! Sono <b>ProntoChef</b>. Pronto a mettere le mani in pasta? 🍕 Sono qui per aiutarti."
+        parse_mode: "HTML"
+    - custom:
+        text: "Salve! 🍽️ Sono <b>ProntoChef</b>. Cerchi ispirazione o hai già un ingrediente in mente?"
+        parse_mode: "HTML"
+    - custom:
+        text: "Benvenuto nella mia cucina virtuale! Sono <b>ProntoChef</b>. 🥕 Oggi prepariamo qualcosa di speciale?"
+        parse_mode: "HTML"
   utter_help:
-    - text: |
-        Posso aiutarti a:
-        - cercare ricette per categoria
-        - filtrare per difficoltà
-        - suggerirti cosa cucinare
+    - custom:
+        text: |
+          👨‍🍳 <b>Ecco cosa posso fare per te!</b>
+
+          🔍 <b>COSA PUOI CHIEDERMI SUBITO</b>
+          🥦 <b>Svuotafrigo:</b> "Ho zucchine e gamberetti". Dimmi gli ingredienti e ti suggerirò delle ricette
+          🍝 <b>Nome:</b> "Mostrami una ricetta per i pancake allo yogurt"
+          🍰 <b>Categoria:</b> "Voglio un dolce". Puoi scegliere tra antipasti, primi piatti, secondi piatti, dolci, lievitati,
+          piatti unici, contorni, torte salate, salse e sughi, bevande, marmellate e conserve e insalate.
+          ⚡ <b>Filtra:</b> "Voglio una ricetta facile"
+          🧭 <b>Guidata:</b> "Guidami nella scelta" e io ti farò alcune domande per trovare qualcosa che fa al caso tuo
+          🎲 <b>Sorpresa:</b> "Sorprendimi!" e io ti proporrò una ricetta a caso
+          🛒 <b>Carrello:</b> "Mostra la lista della spesa" o "Svuota la lista"
+
+          📋 <b>DOPO AVER VISTO I RISULTATI</b>
+          <i>(Quando ti mostro un elenco di ricette...)</i>
+          1️⃣ <b>Scegli:</b> "Fammi vedere la prima" per visualizzare i dettagli di una ricetta
+          🔄 <b>Simili:</b> "Hai qualcosa di simile?" per vedere una ricetta con ingredienti simili
+          📝 <b>Dettagli:</b> "Che ingredienti servono?" per vedere solo la lista degli ingredienti
+          🛍️ <b>Spesa:</b> "Aggiungi alla lista della spesa" per salvare e poter gestire la lista della tua spesa
+
+          💡 <i>Prova a iniziare dicendomi cosa hai nel frigo o di che tipo di piatto hai voglia!</i>
+        parse_mode: "HTML"
   utter_searching:
     - text: "Sto cercando delle ricette per te...🍝"
   utter_ask_category:

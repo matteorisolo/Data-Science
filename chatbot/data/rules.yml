@@ -1,23 +1,37 @@
 version: "3.1"
 
 rules:
+  - rule: Greet user anytime
+    steps:
+      - intent: greet
+      - action: utter_greet
+
+  - rule: Help user anytime
+    steps:
+      - intent: help
+      - action: utter_help
+
   - rule: Random Recipe
     steps:
       - intent: surprise_me
       - action: action_surprise_me
+
   - rule: Filter by difficulty
     steps:
     - intent: filter_by_difficulty
     - action: action_filter_by_difficulty
+
   - rule: Suggest similar recipes
     steps:
       - intent: suggest_similar_recipes
       - action: action_suggest_similar_recipes
+
   - rule: Start guided search form
     steps:
       - intent: guided_search
       - action: action_start_guided_search_form
       - active_loop: guided_search_form
+
   - rule: Continue guided search form
     condition:
       - active_loop: guided_search_form
@@ -25,6 +39,7 @@ rules:
       - intent: null
       - action: guided_search_form
       - active_loop: guided_search_form
+
   - rule: Submit guided search form
     condition:
       - active_loop: guided_search_form
@@ -32,18 +47,22 @@ rules:
       - action: guided_search_form
       - active_loop: null
       - action: action_submit_guided_search
+
   - rule: Show saved shopping list
     steps:
       - intent: show_shopping_list
       - action: action_show_shopping_list
+
   - rule: Add current recipe to shopping list
     steps:
       - intent: add_to_shopping_list
       - action: action_add_to_shopping_list
+
   - rule: Clear shopping list
     steps:
       - intent: clear_shopping_list
       - action: action_clear_shopping_list
+      
   - rule: Risposta di default quando non capisco (Fallback)
     steps:
       - intent: nlu_fallback
