@@ -4,7 +4,6 @@ intents:
   - greet
   - help
   - search_by_category
-  - select_from_last_recipes
   - select_by_index
   - ask_recipe_ingredients
   - search_by_name
@@ -55,11 +54,22 @@ slots:
     type: list
     influence_conversation: true
     mappings:
-      # Qui from_entity riempie la lista automaticamente
+      # 1. Caso SPECIFICO: Se l'utente usa l'intent esplicito "search_by_ingredients"
+      # (es. "Voglio cucinare con le uova"), lo accettiamo sempre.
       - type: from_entity
         entity: ingredient
-        intent: [inform, search_by_ingredients, guided_search]
-      # Fallback testuale (la validate action poi lo trasformerà in lista)
+        intent: [search_by_ingredients]
+
+      # 2. Caso GENERICO (inform): Lo accettiamo SOLO se lo stiamo chiedendo!
+      # Questo è il blocco che ti salva da "qualsiasi" detto per la difficoltà.
+      - type: from_entity
+        entity: ingredient
+        intent: [inform, guided_search]
+        conditions:
+         - active_loop: guided_search_form
+           requested_slot: ingredients  # <--- ECCO LA PROTEZIONE VERA
+
+      # 3. Fallback testuale (come avevi già)
       - type: from_text
         conditions:
         - active_loop: guided_search_form
@@ -157,29 +167,80 @@ responses:
   utter_searching:
     - text: "Sto cercando delle ricette per te...🍝"
   utter_ask_category:
-    - text: "Che tipo di piatto vuoi? (primo, secondo, dolce, ecc.)"
+    - text: "🍽️ Che tipo di piatto cerchi? (primo, secondo, dolce, ecc.)"
+  utter_no_category_results:
+    - text: "Non ho trovato ricette per la categoria '{category}' 😕"
+  utter_ask_select_from_list:
+    - text: "👇 Dimmi il nome della ricetta che vuoi leggere, oppure scrivimi 'la prima'!"
+  utter_ask_search_term:
+    - text: "🔎 Che ricetta stai cercando? Scrivimi il nome (es. Tiramisù)."
+  utter_searching_feedback:
+    - text: "🔎 Cerco {query} nel ricettario..."
+  utter_no_recipes_found:
+    - text: "😕 Non ho trovato ricette per '{query}'."
+  utter_recipe_data_error:
+    - text: "🚫 C'è stato un problema nel recuperare i dettagli per {recipe_name}."
+  utter_no_list_active:
+    - text: "🤷‍♂️ Non ho ancora suggerito nessuna ricetta da cui scegliere."
+  utter_number_not_understood:
+    - text: "🤔 Non ho capito quale numero hai scelto. Scrivimi semplicemente '1', '2' ecc."
+  utter_number_out_of_bounds:
+    - text: "⚠️ Il numero deve essere compreso tra 1 e {max_number}."
+  utter_selection_confirmed:
+    - text: "✅ Hai scelto: {recipe_name}"
+  utter_ask_specify_recipe_for_ingredients:
+    - text: "🤔 Non ho capito a quale piatto ti riferisci. Dimmi il nome o la posizione."
+  utter_recipe_not_found_ingredients:
+    - text: "🚫 Non ho trovato dati per '{recipe_name}' nel mio ricettario."
+  utter_no_ingredients_data:
+    - text: "⚠️ Ops, questa ricetta esiste ma non ha ingredienti registrati nel database."
+  utter_ask_ingredients_missing:
+    - text: "🍅 Dimmi cosa hai in frigo! Cercherò una ricetta basata sui tuoi ingredienti. (Es. ho zucchine e gamberetti)"
+  utter_ingredients_search_success:
+    - text: "👨‍🍳 Ho trovato queste ricette con {ingredients_list}:"
+  utter_no_recipes_by_ingredients:
+    - text: "😕 Non ho trovato nessuna ricetta che usi tutti questi ingredienti: {ingredients_list}."
+  utter_empty_database:
+    - text: "📭 Ops, il mio ricettario sembra vuoto al momento! Non posso pescare nulla."
+  utter_surprise_error:
+    - text: "😅 Il dado è caduto male... Ho avuto un problema tecnico nel pescare la ricetta."
   utter_ask_difficulty:
-    - text: "Che livello di difficoltà preferisci? (facile, media, difficile)"
+    - text: "🤔 Che livello di difficoltà preferisci? (facile, media, difficile)"
+  utter_no_difficulty_results:
+    - text: "🚫 Non ho trovato ricette con difficoltà '{difficulty}'."
+  utter_ask_context_for_similar:
+    - text: "🤔 A quale piatto ti riferisci? Dimmi prima una ricetta, così posso trovarti delle alternative!"
+  utter_no_similar_recipes:
+    - text: "😕 Non ho trovato nulla di simile a '{recipe_name}'. È una ricetta unica nel suo genere!"
   utter_ask_ingredients:
-    - text: "Hai qualche ingrediente da usare? (puoi dirne più di uno oppure scrivere 'no')"
+    - text: "🥕 Hai qualche ingrediente da usare? (puoi dirne più di uno oppure scrivere 'no')"
   utter_ask_num_people:
-    - text: "Per quante persone?"
-  utter_no_results:
-    - text: "Non ho trovato ricette con questi criteri 😕"
+    - text: "👥 Per quante persone?"
+  utter_no_guided_results:
+    - text: "😕 Non ho trovato nessuna ricetta che soddisfi tutti i criteri che mi hai dato. Prova a essere meno specifico!"
+  utter_guided_search_header:
+    - text: "✅ Ricerca completata! Ecco {count} proposte su misura che potrebbero piacerti 🍽️:"
+  utter_ask_recipe_for_shopping:
+    - text: "🤷‍♂️ Quale ricetta devo aggiungere? Selezionane prima una!"
   utter_shopping_list_cleared:
     - text: "Ho svuotato la tua lista della spesa! 🗑️"
-  utter_added_to_list:
+  utter_added_to_shopping_list:
     - text: "Ho aggiunto gli ingredienti di {recipe_name} alla tua lista! 🛒"
+  tter_check_shopping_list_footer:
+    - text: "💡 Se vuoi controllare il totale, dimmi 'Fammi vedere la lista'."
+  utter_shopping_list_empty:
+    - text: "🛒 Il carrello è vuoto. Cerca una ricetta e dì 'aggiungi alla lista'!"
+  utter_shopping_list_footer:
+    - text: "💡 Quando hai fatto la spesa, dimmi 'Svuota la lista' per ricominciare!"
   utter_default:
     - text: "Scusa, non ho capito cosa intendi 😕. Posso cercare ricette, mostrarti il carrello o aiutarti a scegliere."
     - text: "Mmm, questo è fuori dalla mia portata culinaria 🍳. Prova a chiedermi una ricetta!"
 
 actions:
   - action_search_by_category
-  - action_select_recipe
+  - action_smart_recipe_handler
   - action_select_by_index
   - action_ask_recipe_ingredients
-  - action_search_by_name
   - action_search_by_ingredients
   - action_surprise_me
   - action_filter_by_difficulty

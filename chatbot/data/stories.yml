@@ -8,27 +8,21 @@ stories:
   - action: utter_searching
   - action: action_search_by_category
 
-- story: select recipe after search
+- story: smart recipe handling
   steps:
-  - intent: select_from_last_recipes
-  - action: action_select_recipe
+  - intent: search_by_name  # Nota: Abbiamo unificato gli intent qui
+  - action: action_smart_recipe_handler
 
-- story: select recipe after search by position
+- story: select recipe by position
   steps:
     - intent: select_by_index
     - action: action_select_by_index
-    - action: action_select_recipe
+    - action: action_smart_recipe_handler
 
 - story: ask recipe ingredients
   steps:
     - intent: ask_recipe_ingredients
     - action: action_ask_recipe_ingredients
-
-- story: search recipe by name
-  steps:
-    - intent: search_by_name
-    - action: action_search_by_name
-    - action: action_select_recipe
 
 - story: search by ingredients
   steps:

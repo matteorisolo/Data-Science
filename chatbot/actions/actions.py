@@ -1,6 +1,10 @@
 from rasa_sdk import Action, Tracker
 from rasa_sdk.executor import CollectingDispatcher
 from rasa_sdk.events import SlotSet, ActiveLoop
+from typing import Any, Text, Dict, List
+import difflib
+import re
+import random
 from actions.data_loader import recipes_df  # il tuo dataset
 from actions.recipe_utils import get_recipe_by_name  # funzione da creare
 from actions.recipe_utils import get_recipes_by_category
@@ -24,59 +28,154 @@ class ActionSearchByCategory(Action):
         category = tracker.get_slot("category")
 
         if not category:
-            dispatcher.utter_message("Che tipo di piatto cerchi?")
+            dispatcher.utter_message(response="utter_ask_category")
             return []
 
         recipes = get_recipes_by_category(recipes_df, category)
 
         if not recipes:
-            dispatcher.utter_message(
-                f"Non ho trovato ricette per la categoria '{category}'."
-            )
+            dispatcher.utter_message(response="utter_no_category_results", category=category)
             return []
 
-        response = f"Ecco alcune ricette {category} 🍽️:\n"
+        response = f"Ecco alcune ricette per la categoria {category} 🍽️:\n"
         response += "\n".join([f"• {r}" for r in recipes])
 
         dispatcher.utter_message(response)
+        dispatcher.utter_message(response="utter_ask_select_from_list")
+
         return [SlotSet("last_recipes", recipes)]
 
-class ActionSelectRecipe(Action):
+class ActionSmartRecipeHandler(Action):
 
     def name(self) -> str:
-        return "action_select_recipe"
+        return "action_smart_recipe_handler"
 
-    def run(self, dispatcher: CollectingDispatcher,
-            tracker: Tracker,
-            domain: dict):
-
-        recipe_name = tracker.get_slot("recipe_name")
+    def run(self, dispatcher, tracker, domain):
+        user_text = tracker.latest_message.get('text', '').lower()
+        
+        slot_value = tracker.get_slot("recipe_name")
+        entity_value = next(tracker.get_latest_entity_values("recipe_name"), None)
         last_recipes = tracker.get_slot("last_recipes") or []
 
-        if not recipe_name or recipe_name.lower() not in [r.lower() for r in last_recipes]:
-            dispatcher.utter_message(
-                f"Non ho trovato '{recipe_name}' tra le ultime ricette suggerite. "
-                f"Prova a sceglierne una dalle ultime {len(last_recipes)}."
-            )
-            return []
+        selected_candidate = None
 
+        # =========================================================
+        # FASE 1: CONTROLLO LISTA
+        # =========================================================
+        if last_recipes:
+            
+            # ---------------------------------------------------------
+            # 1. PRIORITÀ SLOT (QUELLO CHE VOLEVI) 🥇
+            # Se ActionSelectByIndex ha settato lo slot, o l'entità l'ha riempito,
+            # e questo valore esiste nella lista attuale, VINCE LUI.
+            # Ignoriamo totalmente cosa ha scritto l'utente nel testo.
+            # ---------------------------------------------------------
+            if slot_value:
+                for r in last_recipes:
+                    # Controllo case-insensitive esatto
+                    if r.lower() == slot_value.lower():
+                        selected_candidate = r
+                        break
+            
+            # ---------------------------------------------------------
+            # 2. FALLBACK SUL TESTO
+            # Entriamo qui SOLO se lo slot era vuoto o conteneva una ricetta 
+            # che NON c'entra nulla con la lista attuale (es. vecchio slot sporco).
+            # ---------------------------------------------------------
+            if not selected_candidate:
+                search_term = entity_value if entity_value else user_text
+                
+                # Pulizia Stop Words
+                stop_words = ["vediamo", "fammi", "vedere", "mostrami", "voglio", "la", "il", "lo", "i", "gli", "le", "un", "una", "ricetta", "della", "del", "di"]
+                clean_term = search_term
+                for word in stop_words:
+                    clean_term = re.sub(r'\b' + word + r'\b', '', clean_term).strip()
+                
+                if len(clean_term) >= 3:
+                    for r in last_recipes:
+                        r_lower = r.lower()
+                        if clean_term in r_lower or r_lower in user_text:
+                            selected_candidate = r
+                            break
+
+        # --- EXIT IMMEDIATO ---
+        if selected_candidate:
+            return self._show_recipe_details(dispatcher, selected_candidate)
+
+
+        # =========================================================
+        # FASE 2: NUOVA RICERCA (Fallback totale)
+        # =========================================================
+        
+        # Se siamo qui, lo slot conteneva roba vecchia non valida per la lista,
+        # oppure è una ricerca nuova da zero.
+        query = entity_value if entity_value else (slot_value if slot_value else user_text)
+
+        if not query or len(query) < 3:
+             dispatcher.utter_message(response="utter_ask_search_term")
+             return []
+        
+        dispatcher.utter_message(response="utter_searching_feedback", query=query)
+
+        results = search_recipes_by_name(recipes_df, query)
+
+        if not results:
+            dispatcher.utter_message(response="utter_no_recipes_found", query=query)
+            return [SlotSet("recipe_name", None)]
+
+        if len(results) == 1:
+            return self._show_recipe_details(dispatcher, results[0])
+
+        limit = 10
+        # LOGICA CASUALE
+        # Se i risultati sono più del limite, ne prendiamo 'limit' A CASO.
+        if len(results) > limit:
+            # random.sample estrae 'limit' elementi unici a caso dalla lista
+            display_list = results[:limit]
+            response = f"Ho trovato ben {len(results)} ricette! 😲\nEcco {len(display_list)} proposte per te:\n\n"
+        else:
+            # Se sono poche, le mostriamo tutte così come sono
+            display_list = results
+            response = f"Ho trovato {len(results)} ricette 🍽️:\n\n"
+
+        # Costruzione elenco
+        for i, r in enumerate(display_list): 
+            response += f"{i + 1}. {r}\n"
+
+        dispatcher.utter_message(text=response, parse_mode="HTML")
+        dispatcher.utter_message(response="utter_ask_select_from_list")
+
+        # --- PUNTO FONDAMENTALE ---
+        # Salviamo nello slot SOLO 'display_list' (quelle mostrate), NON 'results' (tutte).
+        # In questo modo l'indice "1" corrisponderà davvero alla prima visualizzata.
+        return [
+            SlotSet("last_recipes", display_list),
+            SlotSet("recipe_name", None) 
+        ]
+
+    # --- HELPER MODIFICATO ---
+    def _show_recipe_details(self, dispatcher, recipe_name):
         recipe_data = get_recipe_by_name(recipes_df, recipe_name)
 
         if not recipe_data:
-            dispatcher.utter_message(f"Ops, non sono riuscito a trovare la ricetta '{recipe_name}'.")
-            return []
+            dispatcher.utter_message(f"🚫 Errore dati per {recipe_name}")
+            return [SlotSet("recipe_name", None)]
 
-        # Creiamo la lista degli ingredienti
         formatted_ingredients = [
-            f"- {i['nome'].title()}: {i['quantita']}" for i in recipe_data["ingredienti_parsed"]
+            f"🔸 {i['nome'].title()}: {i['quantita']}" for i in recipe_data["ingredienti_parsed"]
         ]
 
-        response = f"🍽 {recipe_data['nome'].title()}\n\nIngredienti:\n"
+        response = f"👨‍🍳 {recipe_data['nome'].upper()}\n\n"
+        response += f"🥣 Ingredienti per {recipe_data['persone/pezzi']} persone/pezzi:\n"
         response += "\n".join(formatted_ingredients)
-        response += f"\n\nPreparazione:\n{recipe_data['preparazione']}"
+        response += f"\n\n🍳 Preparazione:\n{recipe_data['preparazione']}"
 
-        dispatcher.utter_message(response)
-        return []
+        dispatcher.utter_message(text=response, parse_mode="HTML")
+
+        # --- MODIFICA FONDAMENTALE QUI SOTTO ---
+        # NON pulire lo slot (None). Salva la ricetta visualizzata!
+        # Così se dopo l'utente dice "Aggiungi alla lista", il bot sa di cosa parla.
+        return [SlotSet("recipe_name", recipe_name)]
 
 class ActionSelectByIndex(Action):
 
@@ -84,47 +183,64 @@ class ActionSelectByIndex(Action):
         return "action_select_by_index"
 
     def run(self, dispatcher, tracker, domain):
-
         text = tracker.latest_message.get("text", "").lower()
         last_recipes = tracker.get_slot("last_recipes") or []
 
         if not last_recipes:
-            dispatcher.utter_message(
-                "Non ho ancora suggerito nessuna ricetta."
-            )
+            dispatcher.utter_message(response="utter_no_list_active")
             return []
 
-        # Mapping parole → indice
-        mapping = {
-            "prima": 0,
-            "seconda": 1,
-            "terza": 2,
-            "quarta": 3,
-            "quinta": 4,
-            "ultima": len(last_recipes) - 1
-        }
+        selected_index = None
 
-        index = None
-        for key, value in mapping.items():
-            if key in text:
-                index = value
-                break
+        # --- STRATEGIA 1: Cerca numeri a cifre (es. "1", "2", "10") ---
+        # \b indica il confine della parola, \d+ indica uno o più numeri
+        numbers = re.findall(r'\b\d+\b', text)
+        
+        if numbers:
+            # Prende il primo numero trovato e converte in indice (0-based)
+            selected_index = int(numbers[0]) - 1
 
-        if index is None or index < 0 or index >= len(last_recipes):
-            dispatcher.utter_message(
-                f"Puoi scegliere una posizione tra 1 e {len(last_recipes)}."
-            )
+        # --- STRATEGIA 2: Cerca parole (Ordinali e Cardinali) ---
+        # Solo se non abbiamo trovato numeri a cifre
+        if selected_index is None:
+            # Mapping esteso per coprire i casi più comuni
+            mapping = {
+                "prima": 0, "primo": 0, "uno": 0,
+                "seconda": 1, "secondo": 1, "due": 1,
+                "terza": 2, "terzo": 2, "tre": 2,
+                "quarta": 3, "quarto": 3, "quattro": 3,
+                "quinta": 4, "quinto": 4, "cinque": 4,
+                "sesta": 5, "sesto": 5, "sei": 5,
+                "settima": 6, "settimo": 6, "sette": 6,
+                "ottava": 7, "ottavo": 7, "otto": 7,
+                "nona": 8, "nono": 8, "nove": 8,
+                "decima": 9, "decimo": 9, "dieci": 9,
+                "ultima": len(last_recipes) - 1,
+                "penultima": len(last_recipes) - 2
+            }
+            
+            for key, val in mapping.items():
+                # Usa Regex per cercare la parola esatta (evita match parziali)
+                if re.search(r'\b' + key + r'\b', text):
+                    selected_index = val
+                    break
+
+        # --- VALIDAZIONE ---
+        if selected_index is None:
+            dispatcher.utter_message(response="utter_number_not_understood")
             return []
 
-        recipe_name = last_recipes[index]
+        if selected_index < 0 or selected_index >= len(last_recipes):
+            dispatcher.utter_message(response="utter_number_out_of_bounds", max_number=len(last_recipes))
+            return []
 
-        dispatcher.utter_message(
-            f"Ok! Ti mostro la ricetta **{recipe_name}** 🍽️"
-        )
+        # --- RISULTATO ---
+        recipe_name = last_recipes[selected_index]
 
-        return [
-            SlotSet("recipe_name", recipe_name)
-        ]
+        # Messaggio di conferma (Opzionale, ma utile per feedback immediato)
+        dispatcher.utter_message(response="utter_selection_confirmed", recipe_name=recipe_name.title())
+
+        return [SlotSet("recipe_name", recipe_name)]
 
 class ActionAskRecipeIngredients(Action):
 
@@ -163,78 +279,30 @@ class ActionAskRecipeIngredients(Action):
 
         # --- Caso fallback: nessun nome né posizione ---
         if not recipe_name:
-            dispatcher.utter_message(
-                "Non hai specificato quale ricetta. "
-                "Puoi dirmi il nome o la posizione tra le ultime suggerite."
-            )
+            dispatcher.utter_message(response="utter_ask_specify_recipe_for_ingredients")
             return [SlotSet("recipe_name", None)]  # reset slot
 
         # --- Recuperiamo i dati della ricetta ---
         recipe_data = get_recipe_by_name(recipes_df, recipe_name)
         if not recipe_data:
-            dispatcher.utter_message(f"Non ho trovato '{recipe_name}' tra le ricette disponibili.")
+            dispatcher.utter_message(response="utter_recipe_not_found_ingredients", recipe_name=recipe_name)
             return [SlotSet("recipe_name", None)]  # reset slot
 
         # --- Lista ingredienti ---
         ingredients = recipe_data.get("ingredienti_parsed", [])
         if not ingredients:
-            dispatcher.utter_message("Ops, questa ricetta non ha ingredienti registrati.")
+            dispatcher.utter_message(response="utter_no_ingredients_data")
             return [SlotSet("recipe_name", recipe_name)]
 
         formatted_ingredients = [f"- {i['nome'].title()}: {i['quantita']}" for i in ingredients]
 
-        response = f"🛒 Lista della spesa per {recipe_data['nome'].title()}:\n"
+        response = f"🥣 Ingredienti per {recipe_data['nome'].title()} (per {recipe_data['persone/pezzi']} persone/pezzi):\n"
         response += "\n".join(formatted_ingredients)
 
         dispatcher.utter_message(response)
 
         # --- Aggiorniamo sempre lo slot con la ricetta corrente ---
         return [SlotSet("recipe_name", recipe_name)]
-
-class ActionSearchByName(Action):
-
-    def name(self) -> str:
-        return "action_search_by_name"
-
-    def run(self, dispatcher, tracker, domain):
-
-        query = tracker.get_slot("recipe_name")
-
-        if not query:
-            dispatcher.utter_message(
-                "Che ricetta stai cercando?"
-            )
-            return []
-
-        results = search_recipes_by_name(recipes_df, query)
-
-        if not results:
-            dispatcher.utter_message(
-                f"Non ho trovato ricette che contengono '{query}'."
-            )
-            return []
-
-        # 🔹 Caso 1: una sola ricetta → mostriamo direttamente
-        if len(results) == 1:
-            recipe_name = results[0]
-            dispatcher.utter_message(
-                f"Ho trovato la ricetta **{recipe_name}** 🍽️"
-            )
-            return [
-                SlotSet("last_recipes", results),
-                SlotSet("recipe_name", recipe_name)
-            ]
-
-        # 🔹 Caso 2: più ricette → lista
-        response = "Ho trovato queste ricette 🍽️:\n"
-        response += "\n".join([f"• {r}" for r in results])
-
-        dispatcher.utter_message(response)
-
-        return [
-            SlotSet("last_recipes", results),
-            SlotSet("recipe_name", None)  # IMPORTANTISSIMO
-        ]
     
 class ActionSearchByIngredients(Action):
 
@@ -251,26 +319,50 @@ class ActionSearchByIngredients(Action):
         # --- Fallback: se non ci sono entity, prova a parsare dal testo ---
         if not ingredients:
             text = tracker.latest_message.get("text", "").lower()
-            # prendiamo le parole che non siano troppo brevi
-            ingredients = [w.strip() for w in text.split() if len(w) > 2]
+            
+            # Lista di parole da IGNORARE (verbi, articoli, richieste comuni)
+            stop_words = [
+                "vorrei", "voglio", "cucinare", "preparare", "fare", "mangiare", "usare",
+                "con", "senza", "il", "la", "le", "i", "gli", "un", "una", "uno", 
+                "del", "della", "degli", "di", "da", "in", "e", "o", "a",
+                "che", "cosa", "posso", "ho", "avrei", "c'è", "ci", "sono",
+                "ricetta", "piatto", "pranzo", "cena", "veloce", "semplice", "buono",
+                "oggi", "domani", "adesso", "subito", "per", "favore", "grazie"
+            ]
 
-        # --- Resettiamo lo slot last_recipes all'inizio per evitare risultati vecchi ---
-        SlotSet("last_recipes", None)
+            # Puliamo la punteggiatura (es. "uova, farina" -> "uova farina")
+            clean_text = re.sub(r'[^\w\s]', ' ', text)
+            
+            # Estraiamo le parole che NON sono stop_words e sono lunghe almeno 3 caratteri
+            ingredients = [
+                w.strip() for w in clean_text.split() 
+                if len(w) > 2 and w not in stop_words
+            ]
+
+        # 3. Se ANCORA non abbiamo nulla, chiediamo aiuto all'utente
+        if not ingredients:
+            dispatcher.utter_message(response="utter_ask_ingredients_missing")
+            return [SlotSet("last_recipes", [])]
 
         # --- Recuperiamo le ricette corrispondenti ---
         recipes = get_recipes_by_ingredients(recipes_df, ingredients)
 
+        # Prepariamo la stringa degli ingredienti per il messaggio (es. "uova, pepe")
+        ingredients_str = ", ".join(ingredients).title()
+
         if not recipes:
             dispatcher.utter_message(
-                "Non ho trovato ricette con questi ingredienti 😕"
+                response="utter_no_recipes_by_ingredients", 
+                ingredients_list=ingredients_str
             )
             return [SlotSet("last_recipes", [])]
 
         # --- Formattiamo la risposta ---
-        response = "Ecco alcune ricette che puoi fare 🍽️:\n"
+        response = f"Ecco alcune ricette che puoi fare con {ingredients_str} 🍽️:\n"
         response += "\n".join([f"• {r}" for r in recipes])
 
         dispatcher.utter_message(response)
+        dispatcher.utter_message(response="utter_ask_select_from_list")
 
         # --- Aggiorniamo lo slot last_recipes con i nuovi risultati ---
         return [SlotSet("last_recipes", recipes)]
@@ -285,9 +377,7 @@ class ActionSurpriseMe(Action):
             domain: dict):
 
         if recipes_df.empty:
-            dispatcher.utter_message(
-                "Ops, al momento non ho ricette disponibili 😕"
-            )
+            dispatcher.utter_message(response="utter_empty_database")
             return []
 
         # scegliamo una ricetta casuale
@@ -297,20 +387,18 @@ class ActionSurpriseMe(Action):
         recipe_data = get_recipe_by_name(recipes_df, recipe_name)
 
         if not recipe_data:
-            dispatcher.utter_message(
-                "Ops, qualcosa è andato storto con la ricetta casuale 😅"
-            )
+            dispatcher.utter_message(response="utter_surprise_error")
             return []
-
+        
         # ingredienti
         formatted_ingredients = [
-            f"- {i['nome'].title()}: {i['quantita']}"
+            f"🔸 {i['nome'].title()}: {i['quantita']}"
             for i in recipe_data["ingredienti_parsed"]
         ]
 
         response = f"🎲 Ti propongo questa ricetta a sorpresa!\n\n"
         response += f"🍽 {recipe_data['nome'].title()}\n\n"
-        response += "Ingredienti:\n"
+        response += f"Ingredienti per {recipe_data['persone/pezzi']} persone/pezzi:\n"
         response += "\n".join(formatted_ingredients)
         response += f"\n\nPreparazione:\n{recipe_data['preparazione']}"
 
@@ -334,20 +422,22 @@ class ActionFilterByDifficulty(Action):
         # Recupero dello slot
         difficulty = tracker.get_slot("difficulty")
         if not difficulty:
-            dispatcher.utter_message("Non hai specificato il livello di difficoltà 😕")
+            dispatcher.utter_message(response="utter_ask_difficulty")
             return []
 
         # Chiamo la funzione helper
         recipes = get_recipes_by_difficulty(recipes_df, difficulty)
 
         if not recipes:
-            dispatcher.utter_message(f"Non ho trovato ricette di difficoltà '{difficulty}' 😕")
+            dispatcher.utter_message(response="utter_no_difficulty_results", difficulty=difficulty)
             return []
 
         # Risposta all'utente
         response = f"Ecco alcune ricette di difficoltà '{difficulty}' 🍽️:\n"
         response += "\n".join([f"• {r}" for r in recipes])
         dispatcher.utter_message(response)
+
+        dispatcher.utter_message(response="utter_ask_select_from_list")
 
         # Salvo le ultime ricette suggerite
         return [SlotSet("last_recipes", recipes)]
@@ -362,9 +452,7 @@ class ActionSuggestSimilarRecipes(Action):
         recipe_name = tracker.get_slot("recipe_name")
 
         if not recipe_name:
-            dispatcher.utter_message(
-                "Dimmi prima una ricetta così posso suggerirti qualcosa di simile 🙂"
-            )
+            dispatcher.utter_message(response="utter_ask_context_for_similar")
             return []
 
         recipes = get_similar_recipes_by_ingredients(
@@ -373,15 +461,14 @@ class ActionSuggestSimilarRecipes(Action):
         )
 
         if not recipes:
-            dispatcher.utter_message(
-                "Non ho trovato ricette simili a questa 😕"
-            )
+            dispatcher.utter_message(response="utter_no_similar_recipes", recipe_name=recipe_name)
             return []
 
         response = "Se ti è piaciuta questa, prova anche 🍽️:\n"
         response += "\n".join([f"• {r}" for r in recipes])
 
         dispatcher.utter_message(response)
+        dispatcher.utter_message(response="utter_ask_select_from_list")
 
         return [SlotSet("last_recipes", recipes)]
     
@@ -409,6 +496,13 @@ class ActionSubmitGuidedSearch(Action):
     def run(self, dispatcher, tracker, domain):
         category = tracker.get_slot("category")
         difficulty = tracker.get_slot("difficulty")
+
+        if category == "any":
+            category = None
+        
+        if difficulty == "any":
+            difficulty = None
+
         ingredients = tracker.get_slot("ingredients")
         num_people = tracker.get_slot("num_people")
 
@@ -422,12 +516,18 @@ class ActionSubmitGuidedSearch(Action):
         )
 
         if not recipes:
-            dispatcher.utter_message("Non ho trovato ricette con questi criteri 😕")
+            dispatcher.utter_message(response="utter_no_guided_results")
             return [SlotSet("last_recipes", [])]
 
-        response = "Ecco alcune ricette che potrebbero piacerti 🍽️:\n"
-        response += "\n".join([f"{i+1}. {r}" for i, r in enumerate(recipes)])
+        dispatcher.utter_message(
+                    response="utter_guided_search_header", 
+                    count=len(recipes)
+                )
+        
+        response = "\n".join([f"{i+1}. {r}" for i, r in enumerate(recipes)])
         dispatcher.utter_message(response)
+
+        dispatcher.utter_message(response="utter_ask_select_from_list")
 
         return [SlotSet("last_recipes", recipes)]
     
@@ -439,12 +539,13 @@ class ActionAddToShoppingList(Action):
         # 1. Recupera la ricetta corrente
         recipe_name = tracker.get_slot("recipe_name")
         if not recipe_name:
-            dispatcher.utter_message("Non hai selezionato nessuna ricetta da aggiungere.")
+            dispatcher.utter_message(response="utter_ask_recipe_for_shopping")
             return []
 
         # 2. Recupera i dati dal CSV
         recipe_data = get_recipe_by_name(recipes_df, recipe_name) # La tua funzione esistente
         if not recipe_data:
+             dispatcher.utter_message(response="utter_recipe_data_error", recipe_name=recipe_name)
              return []
              
         # 3. Recupera la lista spesa attuale (o creane una vuota)
@@ -453,7 +554,12 @@ class ActionAddToShoppingList(Action):
         # 4. UNISCI (La magia della somma)
         updated_list = merge_shopping_lists(current_list, recipe_data['ingredienti_parsed'])
         
-        dispatcher.utter_message(f"Ho aggiunto gli ingredienti di **{recipe_name}** alla lista! 🛒")
+        dispatcher.utter_message(
+            response="utter_added_to_shopping_list", 
+            recipe_name=recipe_name.title()
+        )
+
+        dispatcher.utter_message(response="utter_check_shopping_list_footer")
         
         return [SlotSet("shopping_list", updated_list)]
 
@@ -465,10 +571,10 @@ class ActionShowShoppingList(Action):
         shopping_list = tracker.get_slot("shopping_list")
         
         if not shopping_list:
-            dispatcher.utter_message("La tua lista della spesa è vuota! 🛒")
+            dispatcher.utter_message(response="utter_shopping_list_empty")
             return []
             
-        response = "🛒 **La tua Lista della Spesa:**\n"
+        response = "🛒 LA TUA LISTA DELLA SPESA:\n"
         for name, data in shopping_list.items():
             # Se abbiamo sommato matematicamente, ricostruiamo la stringa pulita
             if data['amount'] is not None and "+" not in str(data['original_text']):
@@ -482,6 +588,7 @@ class ActionShowShoppingList(Action):
             response += line + "\n"
             
         dispatcher.utter_message(response)
+        dispatcher.utter_message(response="utter_shopping_list_footer")
         return []
 
 class ActionClearShoppingList(Action):
@@ -489,5 +596,5 @@ class ActionClearShoppingList(Action):
         return "action_clear_shopping_list"
 
     def run(self, dispatcher, tracker, domain):
-        dispatcher.utter_message("Lista svuotata! 🗑️")
+        dispatcher.utter_message(response="utter_shopping_list_cleared")
         return [SlotSet("shopping_list", None)]

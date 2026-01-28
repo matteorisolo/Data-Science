@@ -1,4 +1,6 @@
 import pandas as pd
+import random
+import re
 
 def get_recipes_by_category(df, category, limit=5):
     results = df[df["Categoria"] == category.lower()]
@@ -27,22 +29,31 @@ def get_recipe_by_name(df: pd.DataFrame, recipe_name: str):
     return {
         "nome": recipe_row["Nome"],
         "ingredienti_parsed": recipe_row["ingredienti_parsed"],  # già lista di dict
-        "preparazione": recipe_row["Steps"]
+        "preparazione": recipe_row["Steps"],
+        "persone/pezzi": recipe_row.get("Persone/Pezzi", None)
     }
 
-def search_recipes_by_name(df, query, limit=5):
+def search_recipes_by_name(df, query):
     """
     Cerca ricette il cui nome contiene la query (case-insensitive).
-    Ritorna una lista di nomi di ricette.
+    Ritorna una lista di nomi di ricette casuali tra quelle trovate.
     """
     if not query:
         return []
 
     query = query.lower().strip()
 
+    # 1. Filtra il DataFrame
     results = df[df["Nome"].str.lower().str.contains(query, na=False)]
 
-    return results["Nome"].head(limit).tolist()
+    if results.empty:
+        return []
+
+    # 2. Mescola e limita
+    # sample(frac=1) mischia casualmente il 100% delle righe trovate.
+    # .head(limit) prende i primi 'limit' elementi di questo insieme mescolato.
+    # Questo approccio è sicuro anche se trovi meno ricette del limite (es. trovi 3 ricette ma limit è 5).
+    return results.sample(frac=1)["Nome"].tolist()
 
 def get_recipes_by_ingredients(df, ingredients):
     ingredients = [i.lower() for i in ingredients]
@@ -55,11 +66,21 @@ def get_recipes_by_ingredients(df, ingredients):
             for ing in row["ingredienti_parsed"]
         ]
 
-        # match se almeno 1 ingrediente è presente
-        if any(i in recipe_ingredients for i in ingredients):
+        # match se tutti gli ingredienti richiesti sono presenti
+        if all(i in recipe_ingredients for i in ingredients):
             matched_recipes.append(row["Nome"])
+    
+    # --- MODIFICA PER CASUALITÀ ---
+    
+    # Se non abbiamo trovato nulla, torniamo lista vuota
+    if not matched_recipes:
+        return []
 
-    return matched_recipes[:5]  # max 5 risultati
+    # Mescoliamo la lista "in-place" (cioè modifica direttamente l'ordine della lista)
+    random.shuffle(matched_recipes)
+
+    # Ritorniamo i primi 5 elementi della lista ora mescolata
+    return matched_recipes[:5]
 
 def get_recipes_by_difficulty(
     recipes_df,
@@ -87,15 +108,18 @@ def get_recipes_by_difficulty(
 
     return filtered["Nome"].head(limit).tolist()
 
+# Definizione degli ingredienti "rumore" da ignorare
+STOP_INGREDIENTS = {
+    "sale", "sale fino", "sale grosso", "pepe", "pepe nero", 
+    "acqua", "olio", "olio extravergine d'oliva", "olio evo", "olio di oliva"
+}
+
 def get_similar_recipes_by_ingredients(
     recipes_df,
     recipe_name: str,
-    min_common: int = 4,
     limit: int = 5
 ):
-    """
-    Trova ricette simili in base agli ingredienti condivisi.
-    """
+    # 1. Trova la ricetta base
     base = recipes_df[
         recipes_df["Nome"].str.lower() == recipe_name.lower()
     ]
@@ -103,32 +127,59 @@ def get_similar_recipes_by_ingredients(
     if base.empty:
         return []
 
-    base_ingredients = set(
-        i.strip().lower()
-        for i in base.iloc[0]["Ingredienti"].split(",")
-    )
+    base_row = base.iloc[0]
+    
+    # Estrazione ingredienti base
+    if "ingredienti_parsed" in base_row:
+        base_ingredients = set(i['nome'].lower() for i in base_row["ingredienti_parsed"])
+    else:
+        base_ingredients = set(i.strip().lower() for i in base_row["Ingredienti"].split(","))
+
+    # --- PULIZIA INGREDIENTI BASE ---
+    base_clean = base_ingredients - STOP_INGREDIENTS
+    
+    if not base_clean:
+        base_clean = base_ingredients
 
     similarities = []
 
+    # 2. Confronta con le altre ricette
     for _, row in recipes_df.iterrows():
-        name = row["Nome"]
+        current_name = row["Nome"]
 
-        if name.lower() == recipe_name.lower():
+        if current_name.lower() == recipe_name.lower():
             continue
 
-        ingredients = set(
-            i.strip().lower()
-            for i in row["Ingredienti"].split(",")
-        )
+        # Estrazione ingredienti correnti
+        if "ingredienti_parsed" in row:
+            current_ingredients = set(i['nome'].lower() for i in row["ingredienti_parsed"])
+        else:
+            current_ingredients = set(i.strip().lower() for i in row["Ingredienti"].split(","))
 
-        common = base_ingredients & ingredients
+        # --- PULIZIA INGREDIENTI CORRENTI ---
+        current_clean = current_ingredients - STOP_INGREDIENTS
+        
+        if not current_clean: continue
 
-        if len(common) >= min_common:
-            similarities.append((name, len(common)))
+        # --- JACCARD SUI SET PULITI ---
+        intersection = base_clean.intersection(current_clean)
+        union = base_clean.union(current_clean)
 
+        if not union: continue
+
+        jaccard_score = len(intersection) / len(union)
+
+        # Soglie di qualità
+        if jaccard_score > 0.15 and len(intersection) >= 1:
+            similarities.append((current_name, jaccard_score))
+
+    # 3. ORDINAMENTO (Dal punteggio più alto al più basso)
     similarities.sort(key=lambda x: x[1], reverse=True)
 
-    return [name for name, _ in similarities[:limit]]
+    # 4. SELEZIONE DIRETTA (Niente Random)
+    # Prendiamo esattamente i primi 'limit' elementi della lista ordinata.
+    # Questi sono matematicamente i migliori match.
+    return [name for name, score in similarities[:limit]]
 
 def search_recipes_guided(
     recipes_df,
@@ -140,40 +191,38 @@ def search_recipes_guided(
 ):
     df = recipes_df.copy()
 
-    # Filtro Categoria (Solo se category non è None e non è "any")
+    # 1. Filtro Categoria
     if category and category != "any":
-        # Usa str.contains per essere più flessibile (es. "primi" trova "Primi piatti")
         df = df[df["Categoria"].str.lower().str.contains(str(category).lower(), na=False)]
 
-    # Filtro Difficoltà
+    # 2. Filtro Difficoltà
     if difficulty and difficulty != "any":
         df = df[df["difficolta"].str.lower() == str(difficulty).lower()]
 
-    # Filtro Ingredienti (Logica OR: basta averne uno)
+    # 3. Filtro Ingredienti (Logica OR)
     if ingredients:
-        # Assicuriamoci che ingredients sia una lista pulita
         ing_list = [i.lower() for i in ingredients]
         df = df[df["Ingredienti"].apply(
             lambda x: any(i in str(x).lower() for i in ing_list)
         )]
 
-    # Filtro Persone (Opzionale: >= invece di == per trovare ricette "sufficienti")
+    # 4. Filtro Persone
     if num_people and "Persone/Pezzi" in df.columns:
-         # Nota: nel CSV la colonna è 'Persone/Pezzi', assicurati del nome esatto
-         # Puliamo la colonna da 'g' o testo se necessario, o gestiamo errori
-         try:
-            # Qui faccio un tentativo di conversione sicuro
+        try:
             df["_temp_persone"] = pd.to_numeric(df["Persone/Pezzi"], errors='coerce')
             df = df[df["_temp_persone"] >= int(num_people)]
-         except:
-             pass # Se fallisce ignora il filtro
+        except:
+            pass 
 
     if df.empty:
         return []
 
-    return df["Nome"].tolist()[:limit]
-
-import re
+    # --- MODIFICA QUI PER LA CASUALITÀ ---
+    # .sample(frac=1) -> Mescola casualmente il 100% delle righe trovate
+    # .head(limit)    -> Prende le prime 'limit' righe mescolate
+    # .tolist()       -> Converte in lista semplice
+    
+    return df.sample(frac=1)["Nome"].head(limit).tolist()
 
 def parse_quantity(quantity_str):
     """
