@@ -1,1 +1,7 @@
 datasets/
+__pycache__/
+*.pyc
+models/
+.cache/
+.rasa/
+credentials.yml

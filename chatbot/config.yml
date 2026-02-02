@@ -1,0 +1,52 @@
+# The config recipe.
+# https://rasa.com/docs/rasa/model-configuration/
+recipe: default.v1
+
+# The assistant project unique identifier
+# This default value must be replaced with a unique assistant name within your deployment
+# assistant_id: 20260114-120619-fat-river
+
+# Configuration for Rasa NLU.
+# https://rasa.com/docs/rasa/nlu/components/
+language: it
+
+pipeline:
+- name: WhitespaceTokenizer
+
+- name: RegexFeaturizer
+
+- name: LexicalSyntacticFeaturizer
+
+- name: CountVectorsFeaturizer
+  analyzer: word
+  min_ngram: 1
+  max_ngram: 3
+
+- name: CountVectorsFeaturizer
+  analyzer: char_wb
+  min_ngram: 3
+  max_ngram: 5
+
+- name: DIETClassifier
+  epochs: 200
+  constrain_similarities: true
+
+- name: EntitySynonymMapper
+
+- name: FallbackClassifier
+  threshold: 0.4              # Se la sicurezza è sotto il 40%, attiva il fallback
+  ambiguity_threshold: 0.1    # Se due intent sono troppo simili (es. 0.50 e 0.55), attiva il fallback
+
+# Configuration for Rasa Core.
+# https://rasa.com/docs/rasa/core/policies/
+policies:
+- name: MemoizationPolicy
+- name: RulePolicy
+  core_fallback_threshold: 0.4
+  core_fallback_action_name: "action_default_fallback"
+  enable_fallback_prediction: True
+- name: TEDPolicy
+  max_history: 10
+  epochs: 200
+
+assistant_id: 20260115-220122-kind-bud

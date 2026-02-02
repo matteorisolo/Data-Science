@@ -1,0 +1,30 @@
+version: "3.1"
+
+stories:
+
+- story: search category
+  steps:
+  - intent: search_by_category
+  - action: utter_searching
+  - action: action_search_by_category
+
+- story: smart recipe handling
+  steps:
+  - intent: search_by_name  # Nota: Abbiamo unificato gli intent qui
+  - action: action_smart_recipe_handler
+
+- story: select recipe by position
+  steps:
+    - intent: select_by_index
+    - action: action_select_by_index
+    - action: action_smart_recipe_handler
+
+- story: ask recipe ingredients
+  steps:
+    - intent: ask_recipe_ingredients
+    - action: action_ask_recipe_ingredients
+
+- story: search by ingredients
+  steps:
+    - intent: search_by_ingredients
+    - action: action_search_by_ingredients
