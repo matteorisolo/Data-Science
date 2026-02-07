@@ -64,7 +64,6 @@ nlu:
 
 - intent: select_by_index
   examples: |
-    # Ordinali (femminile/maschile)
     - la prima
     - voglio la seconda
     - fammi vedere la terza
@@ -79,16 +78,12 @@ nlu:
     - scelgo il secondo
     - l'ultima
     - la penultima
-    
-    # Numeri cardinali a parole
     - numero uno
     - la numero due
     - scelgo la tre
     - la quattro
     - numero cinque
     - opzione sei
-    
-    # Numeri a cifre (Molto comuni in chat)
     - 1
     - 2
     - 3
@@ -97,8 +92,6 @@ nlu:
     - scegli la 6
     - la numero 7
     - mostrami la 8
-    
-    # Frasi complete
     - fammi vedere quella numero 1
     - apri la ricetta numero 2
     - vai alla 3
@@ -250,14 +243,11 @@ nlu:
 
 - intent: surprise_me
   examples: |
-    # I classici
     - sorprendimi
     - scegli tu
     - fai tu
     - decidi tu per me
     - quello che vuoi tu
-    
-    # Richiesta esplicita di casualità
     - dammi una ricetta a caso
     - fammi una ricetta casuale
     - qualcosa di random
@@ -266,8 +256,6 @@ nlu:
     - estrai una ricetta
     - una vale l'altra
     - genera una ricetta random
-    
-    # Indecisione / Vuoto mentale
     - non so cosa cucinare
     - non ho idee per la cena
     - ho zero idee, aiutami
@@ -276,8 +264,6 @@ nlu:
     - non so che fare da mangiare
     - oggi non voglio scegliere io
     - consigliami qualcosa tu che non so decidere
-    
-    # Ricerca di ispirazione / Novità
     - ispirami
     - stupiscimi con qualcosa di buono
     - dammi un'idea originale
@@ -285,8 +271,6 @@ nlu:
     - fammi scoprire un piatto diverso
     - hai qualche suggerimento al volo?
     - proponimi una specialità a caso
-    
-    # Fiducia nel bot / Colloquiali
     - mi fido di te
     - lascio fare a te
     - fai tu lo chef
@@ -330,15 +314,12 @@ nlu:
 
 - intent: suggest_similar_recipes
   examples: |
-    # Variazioni dirette su "Simile"
     - hai qualcosa di simile?
     - suggeriscimi ricette simili
     - fammi vedere cose simili
     - trova piatti simili a questo
     - c'è qualcosa di molto simile?
     - mostra ricette analoghe
-    
-    # "Come questa" / "Tipo questa"
     - qualcosa come questa
     - ne hai altre tipo questa?
     - qualcosa del genere
@@ -346,16 +327,12 @@ nlu:
     - altre idee su questo stile
     - qualcosa che ci assomiglia
     - una ricetta che ricorda questa
-    
-    # Richiesta di Alternative / Varianti
     - alternative simili
     - dammi un'alternativa a questa
     - vorrei una variante
     - ci sono delle varianti?
     - quali sono le alternative?
-    - hai opzioni sostitutive simili?
-    
-    # Mantenimento del contesto/tema
+    - hai opzioni sostitutive simili
     - rimaniamo su questo genere
     - sempre su questa linea
     - altro a tema
@@ -364,7 +341,6 @@ nlu:
 
 - intent: guided_search
   examples: |
-    # Richieste esplicite di aiuto/guida
     - aiutami a cercare una ricetta
     - voglio una ricerca guidata
     - guidami nella scelta
@@ -374,8 +350,6 @@ nlu:
     - andiamo per esclusione
     - aiutami a decidere il menu
     - consigliami cosa preparare passo passo
-    
-    # Indecisione / Richiesta di consigli generici
     - non so cosa cucinare stasera
     - ho bisogno di un'idea per cena
     - che cosa posso preparare oggi?
@@ -383,9 +357,6 @@ nlu:
     - dammi un consiglio su cosa mangiare
     - vorrei cucinare qualcosa ma non so cosa
     - trovami l'ispirazione giusta
-    
-    # Richieste con parametri misti (IMPORTANTE per il Form)
-    # Questi esempi insegnano al bot che frasi complesse attivano la ricerca guidata
     - cerco un [primo](category) facile
     - vorrei fare un [dolce](category) per [4](num_people) persone
     - mi serve una ricetta [veloce](difficulty) con le [uova](ingredients)
@@ -397,7 +368,6 @@ nlu:
 
 - intent: inform
   examples: |
-    # --- Category (Basato sui tuoi dati reali) ---
     - [primo](category)
     - un [secondo](category)
     - vorrei un [dolce](category)
@@ -412,8 +382,6 @@ nlu:
     - [bevande](category)
     - una ricetta per un [primo piatto](category)
     - un [dolce](category) veloce
-    
-    # --- Difficulty ---
     - [facile](difficulty)
     - [media](difficulty)
     - [difficile](difficulty)
@@ -421,8 +389,6 @@ nlu:
     - difficoltà [media](difficulty)
     - ricetta [semplice](difficulty)
     - livello [difficile](difficulty)
-    
-    # --- Ingredients (I top 50 ingredienti del tuo CSV) ---
     - [mele](ingredient)
     - [pere](ingredient)
     - [pollo](ingredient)
@@ -473,8 +439,6 @@ nlu:
     - [nocciole](ingredient)
     - [noci](ingredient)
     - [pistacchi](ingredient)
-    
-    # --- Num People ---
     - [4](number)
     - siamo in [2](number)
     - per [3](number) persone
@@ -486,7 +450,6 @@ nlu:
 
 - intent: add_to_shopping_list
   examples: |
-    # Verbi diretti (Aggiungi, Metti, Inserisci)
     - aggiungi alla lista
     - aggiungi ingredienti alla spesa
     - metti nella lista della spesa
@@ -494,15 +457,11 @@ nlu:
     - aggiungi questa ricetta alla spesa
     - metti tutto in lista
     - aggiungila al carrello
-    
-    # Verbi di "Memoria" (Segna, Ricorda, Salva)
     - segnati gli ingredienti
     - salvami cosa devo comprare
     - ricorda questi ingredienti per dopo
     - prendi nota della spesa
     - segna tutto nella lista
-    
-    # Intenzione di acquisto
     - devo comprare questi ingredienti
     - compra questi ingredienti
     - voglio fare la spesa per questa ricetta
@@ -511,14 +470,11 @@ nlu:
 
 - intent: show_shopping_list
   examples: |
-    # Domande dirette
     - cosa devo comprare?
     - cosa c'è nella lista?
     - cosa mi manca?
     - cosa ho nel carrello?
     - quali ingredienti ho segnato?
-    
-    # Comandi di visualizzazione
     - fammi vedere la lista
     - visualizza spesa
     - mostrami la lista della spesa
@@ -528,8 +484,6 @@ nlu:
     - controlla la lista
     - cosa c'è nella lista
     - fammi vedere il carrello
-    
-    # Richieste rapide / Recap
     - riepilogo spesa
     - lista ingredienti salvati
     - la mia lista
@@ -537,21 +491,16 @@ nlu:
 
 - intent: clear_shopping_list
   examples: |
-    # Verbi distruttivi (Svuota, Cancella, Elimina)
     - svuota la lista
     - cancella la spesa
     - elimina tutto dalla lista
     - togli tutto dal carrello
     - pulisci la lista della spesa
     - rimuovi gli ingredienti salvati
-    
-    # Reset / Ripartire
     - resetta la lista della spesa
     - ricomincia la lista da zero
     - fai una lista nuova
     - azzera il carrello
-    
-    # Conferma di completamento (Molto utile!)
     - ho comprato tutto, cancella
     - spesa fatta, svuota tutto
     - ho preso tutto, puoi cancellare
@@ -559,7 +508,7 @@ nlu:
 
 - lookup: recipe_name
   examples: |
-    # Rasa caricherà anche il file data/nlu/lookup_recipes.yml
+    # Caricamento file data/nlu/lookup_recipes.yml
 
 - lookup: category
   examples: |
@@ -676,7 +625,8 @@ nlu:
 - synonym: media
   examples: |
     - intermedia
-    - media
+    - medio
+    - intermedio
 - synonym: difficile
   examples: |
     - hard

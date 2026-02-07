@@ -59,17 +59,9 @@ class ActionSmartRecipeHandler(Action):
 
         selected_candidate = None
 
-        # =========================================================
-        # FASE 1: CONTROLLO LISTA
-        # =========================================================
         if last_recipes:
             
-            # ---------------------------------------------------------
-            # 1. PRIORITÀ SLOT (QUELLO CHE VOLEVI) 🥇
-            # Se ActionSelectByIndex ha settato lo slot, o l'entità l'ha riempito,
-            # e questo valore esiste nella lista attuale, VINCE LUI.
-            # Ignoriamo totalmente cosa ha scritto l'utente nel testo.
-            # ---------------------------------------------------------
+            # Se lo slot è già presente, controlliamo se corrisponde a una ricetta della lista (case-insensitive)
             if slot_value:
                 for r in last_recipes:
                     # Controllo case-insensitive esatto
@@ -77,11 +69,7 @@ class ActionSmartRecipeHandler(Action):
                         selected_candidate = r
                         break
             
-            # ---------------------------------------------------------
-            # 2. FALLBACK SUL TESTO
-            # Entriamo qui SOLO se lo slot era vuoto o conteneva una ricetta 
-            # che NON c'entra nulla con la lista attuale (es. vecchio slot sporco).
-            # ---------------------------------------------------------
+            # Se fallisce, proviamo con l'entity
             if not selected_candidate:
                 search_term = entity_value if entity_value else user_text
                 
@@ -98,17 +86,10 @@ class ActionSmartRecipeHandler(Action):
                             selected_candidate = r
                             break
 
-        # --- EXIT IMMEDIATO ---
         if selected_candidate:
             return self._show_recipe_details(dispatcher, selected_candidate)
-
-
-        # =========================================================
-        # FASE 2: NUOVA RICERCA (Fallback totale)
-        # =========================================================
         
-        # Se siamo qui, lo slot conteneva roba vecchia non valida per la lista,
-        # oppure è una ricerca nuova da zero.
+        # Se non abbiamo trovato nulla, usiamo la query originale per cercare tra tutte le ricette
         query = entity_value if entity_value else (slot_value if slot_value else user_text)
 
         if not query or len(query) < 3:
@@ -127,8 +108,7 @@ class ActionSmartRecipeHandler(Action):
             return self._show_recipe_details(dispatcher, results[0])
 
         limit = 10
-        # LOGICA CASUALE
-        # Se i risultati sono più del limite, ne prendiamo 'limit' A CASO.
+        # Se i risultati sono più del limite, si prendono 'limit' casualmente.
         if len(results) > limit:
             # random.sample estrae 'limit' elementi unici a caso dalla lista
             display_list = results[:limit]
@@ -145,15 +125,11 @@ class ActionSmartRecipeHandler(Action):
         dispatcher.utter_message(text=response, parse_mode="HTML")
         dispatcher.utter_message(response="utter_ask_select_from_list")
 
-        # --- PUNTO FONDAMENTALE ---
-        # Salviamo nello slot SOLO 'display_list' (quelle mostrate), NON 'results' (tutte).
-        # In questo modo l'indice "1" corrisponderà davvero alla prima visualizzata.
         return [
             SlotSet("last_recipes", display_list),
             SlotSet("recipe_name", None) 
         ]
 
-    # --- HELPER MODIFICATO ---
     def _show_recipe_details(self, dispatcher, recipe_name):
         recipe_data = get_recipe_by_name(recipes_df, recipe_name)
 
@@ -172,9 +148,6 @@ class ActionSmartRecipeHandler(Action):
 
         dispatcher.utter_message(text=response, parse_mode="HTML")
 
-        # --- MODIFICA FONDAMENTALE QUI SOTTO ---
-        # NON pulire lo slot (None). Salva la ricetta visualizzata!
-        # Così se dopo l'utente dice "Aggiungi alla lista", il bot sa di cosa parla.
         return [SlotSet("recipe_name", recipe_name)]
 
 class ActionSelectByIndex(Action):
@@ -192,7 +165,7 @@ class ActionSelectByIndex(Action):
 
         selected_index = None
 
-        # --- STRATEGIA 1: Cerca numeri a cifre (es. "1", "2", "10") ---
+        # Cerca numeri a cifre (es. "1", "2", "10") ---
         # \b indica il confine della parola, \d+ indica uno o più numeri
         numbers = re.findall(r'\b\d+\b', text)
         
@@ -200,7 +173,7 @@ class ActionSelectByIndex(Action):
             # Prende il primo numero trovato e converte in indice (0-based)
             selected_index = int(numbers[0]) - 1
 
-        # --- STRATEGIA 2: Cerca parole (Ordinali e Cardinali) ---
+        # Cerca parole (Ordinali e Cardinali)
         # Solo se non abbiamo trovato numeri a cifre
         if selected_index is None:
             # Mapping esteso per coprire i casi più comuni
@@ -225,7 +198,6 @@ class ActionSelectByIndex(Action):
                     selected_index = val
                     break
 
-        # --- VALIDAZIONE ---
         if selected_index is None:
             dispatcher.utter_message(response="utter_number_not_understood")
             return []
@@ -234,10 +206,8 @@ class ActionSelectByIndex(Action):
             dispatcher.utter_message(response="utter_number_out_of_bounds", max_number=len(last_recipes))
             return []
 
-        # --- RISULTATO ---
         recipe_name = last_recipes[selected_index]
 
-        # Messaggio di conferma (Opzionale, ma utile per feedback immediato)
         dispatcher.utter_message(response="utter_selection_confirmed", recipe_name=recipe_name.title())
 
         return [SlotSet("recipe_name", recipe_name)]
@@ -256,7 +226,6 @@ class ActionAskRecipeIngredients(Action):
         recipe_name = tracker.get_slot("recipe_name")
         text = tracker.latest_message.get("text", "").lower()
 
-        # --- Caso posizionale ---
         index_mapping = {
             "prima": 0,
             "seconda": 1,
@@ -277,18 +246,15 @@ class ActionAskRecipeIngredients(Action):
         if selected_index is not None:
             recipe_name = last_recipes[selected_index]
 
-        # --- Caso fallback: nessun nome né posizione ---
         if not recipe_name:
             dispatcher.utter_message(response="utter_ask_specify_recipe_for_ingredients")
             return [SlotSet("recipe_name", None)]  # reset slot
 
-        # --- Recuperiamo i dati della ricetta ---
         recipe_data = get_recipe_by_name(recipes_df, recipe_name)
         if not recipe_data:
             dispatcher.utter_message(response="utter_recipe_not_found_ingredients", recipe_name=recipe_name)
             return [SlotSet("recipe_name", None)]  # reset slot
 
-        # --- Lista ingredienti ---
         ingredients = recipe_data.get("ingredienti_parsed", [])
         if not ingredients:
             dispatcher.utter_message(response="utter_no_ingredients_data")
@@ -301,7 +267,6 @@ class ActionAskRecipeIngredients(Action):
 
         dispatcher.utter_message(response)
 
-        # --- Aggiorniamo sempre lo slot con la ricetta corrente ---
         return [SlotSet("recipe_name", recipe_name)]
     
 class ActionSearchByIngredients(Action):
@@ -313,14 +278,12 @@ class ActionSearchByIngredients(Action):
             tracker: Tracker,
             domain: dict):
 
-        # --- Prendiamo gli ingredienti dallo slot ---
         ingredients = tracker.get_slot("ingredients") or []
 
-        # --- Fallback: se non ci sono entity, prova a parsare dal testo ---
         if not ingredients:
             text = tracker.latest_message.get("text", "").lower()
             
-            # Lista di parole da IGNORARE (verbi, articoli, richieste comuni)
+            # Lista di parole da ignorare (verbi, articoli, richieste comuni)
             stop_words = [
                 "vorrei", "voglio", "cucinare", "preparare", "fare", "mangiare", "usare",
                 "con", "senza", "il", "la", "le", "i", "gli", "un", "una", "uno", 
@@ -330,24 +293,21 @@ class ActionSearchByIngredients(Action):
                 "oggi", "domani", "adesso", "subito", "per", "favore", "grazie"
             ]
 
-            # Puliamo la punteggiatura (es. "uova, farina" -> "uova farina")
+            # Pulizia punteggiatura
             clean_text = re.sub(r'[^\w\s]', ' ', text)
             
-            # Estraiamo le parole che NON sono stop_words e sono lunghe almeno 3 caratteri
+            # Estrazione parole significative (escludendo stop words e parole troppo corte)
             ingredients = [
                 w.strip() for w in clean_text.split() 
                 if len(w) > 2 and w not in stop_words
             ]
 
-        # 3. Se ANCORA non abbiamo nulla, chiediamo aiuto all'utente
         if not ingredients:
             dispatcher.utter_message(response="utter_ask_ingredients_missing")
             return [SlotSet("last_recipes", [])]
 
-        # --- Recuperiamo le ricette corrispondenti ---
         recipes = get_recipes_by_ingredients(recipes_df, ingredients)
 
-        # Prepariamo la stringa degli ingredienti per il messaggio (es. "uova, pepe")
         ingredients_str = ", ".join(ingredients).title()
 
         if not recipes:
@@ -357,14 +317,12 @@ class ActionSearchByIngredients(Action):
             )
             return [SlotSet("last_recipes", [])]
 
-        # --- Formattiamo la risposta ---
         response = f"Ecco alcune ricette che puoi fare con {ingredients_str} 🍽️:\n"
         response += "\n".join([f"• {r}" for r in recipes])
 
         dispatcher.utter_message(response)
         dispatcher.utter_message(response="utter_ask_select_from_list")
 
-        # --- Aggiorniamo lo slot last_recipes con i nuovi risultati ---
         return [SlotSet("last_recipes", recipes)]
     
 class ActionSurpriseMe(Action):
@@ -506,7 +464,6 @@ class ActionSubmitGuidedSearch(Action):
         ingredients = tracker.get_slot("ingredients")
         num_people = tracker.get_slot("num_people")
 
-        # recipes_df deve essere importato dal tuo data_loader
         recipes = search_recipes_guided(
             recipes_df,
             category=category,
@@ -536,22 +493,18 @@ class ActionAddToShoppingList(Action):
         return "action_add_to_shopping_list"
 
     def run(self, dispatcher, tracker, domain):
-        # 1. Recupera la ricetta corrente
         recipe_name = tracker.get_slot("recipe_name")
         if not recipe_name:
             dispatcher.utter_message(response="utter_ask_recipe_for_shopping")
             return []
 
-        # 2. Recupera i dati dal CSV
         recipe_data = get_recipe_by_name(recipes_df, recipe_name) # La tua funzione esistente
         if not recipe_data:
              dispatcher.utter_message(response="utter_recipe_data_error", recipe_name=recipe_name)
              return []
              
-        # 3. Recupera la lista spesa attuale (o creane una vuota)
         current_list = tracker.get_slot("shopping_list") or {}
         
-        # 4. UNISCI (La magia della somma)
         updated_list = merge_shopping_lists(current_list, recipe_data['ingredienti_parsed'])
         
         dispatcher.utter_message(
@@ -576,13 +529,10 @@ class ActionShowShoppingList(Action):
             
         response = "🛒 LA TUA LISTA DELLA SPESA:\n"
         for name, data in shopping_list.items():
-            # Se abbiamo sommato matematicamente, ricostruiamo la stringa pulita
             if data['amount'] is not None and "+" not in str(data['original_text']):
-                # Formattazione carina: 500.0g -> 500g
                 qty_clean = f"{data['amount']:.0f}" if data['amount'].is_integer() else f"{data['amount']}"
                 line = f"- {name.title()}: {qty_clean}{data['unit']}"
             else:
-                # Fallback: stampa il testo accumulato (es. "Sale: q.b. + 1 pizzico")
                 line = f"- {name.title()}: {data['original_text']}"
                 
             response += line + "\n"
