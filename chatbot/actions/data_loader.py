@@ -22,7 +22,7 @@ def ensure_ingredients_parsed(value):
                 for ing in parsed
             ]
 
-        # Caso legacy: lista di tuple/list
+        # Caso lista di tuple/list
         return [
             {
                 "nome": ing[0].strip().lower(),

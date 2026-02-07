@@ -10,7 +10,7 @@ stories:
 
 - story: smart recipe handling
   steps:
-  - intent: search_by_name  # Nota: Abbiamo unificato gli intent qui
+  - intent: search_by_name
   - action: action_smart_recipe_handler
 
 - story: select recipe by position

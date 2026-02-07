@@ -12,27 +12,27 @@ intents:
   - filter_by_difficulty
   - suggest_similar_recipes
   - guided_search
-  - add_to_shopping_list    # "Aggiungi questa ricetta alla spesa"
-  - clear_shopping_list     # "Svuota la lista"
-  - show_shopping_list      # (Lo hai già, ma lo aggiorneremo)
+  - add_to_shopping_list
+  - clear_shopping_list
+  - show_shopping_list
 
 entities:
   - category
   - recipe_name
   - ingredient
   - difficulty
-  - number  # Aggiunto perchè usato in num_people
+  - number
 
 slots:
   category:
     type: text
     influence_conversation: true
     mappings:
-      # 1. Priorità all'entità se l'intent è chiaro (Laptop Style)
+      # Priorità all'entità se l'intent è chiaro
       - type: from_entity
         entity: category
         intent: [inform, search_by_category, guided_search]
-      # 2. Fallback: se nel form non capisce l'entità, prende il testo
+      # Fallback: se nel form non capisce l'entità, prende il testo
       - type: from_text
         conditions:
         - active_loop: guided_search_form
@@ -54,22 +54,20 @@ slots:
     type: list
     influence_conversation: true
     mappings:
-      # 1. Caso SPECIFICO: Se l'utente usa l'intent esplicito "search_by_ingredients"
-      # (es. "Voglio cucinare con le uova"), lo accettiamo sempre.
+      # Se l'utente usa l'intent esplicito "search_by_ingredients"
       - type: from_entity
         entity: ingredient
         intent: [search_by_ingredients]
 
-      # 2. Caso GENERICO (inform): Lo accettiamo SOLO se lo stiamo chiedendo!
-      # Questo è il blocco che ti salva da "qualsiasi" detto per la difficoltà.
+      # Caso generico (inform): si accetta solo se si è nel form
       - type: from_entity
         entity: ingredient
         intent: [inform, guided_search]
         conditions:
          - active_loop: guided_search_form
-           requested_slot: ingredients  # <--- ECCO LA PROTEZIONE VERA
+           requested_slot: ingredients
 
-      # 3. Fallback testuale (come avevi già)
+      # Fallback testuale
       - type: from_text
         conditions:
         - active_loop: guided_search_form
@@ -107,7 +105,7 @@ slots:
       - type: custom
 
   shopping_list:
-    type: any      # Conterrà un Dizionario Python: {"uova": "4", "farina": "500g"}
+    type: any
     influence_conversation: false
     mappings:
       - type: custom
